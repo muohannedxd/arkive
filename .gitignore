@@ -1,0 +1,66 @@
+.env
+
+node_modules/
+
+
+# migrations
+migrations/
+
+# Byte-compiled / optimized / DLL files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+
+# Virtual environment
+venv/
+env/
+.venv/
+.env/
+env
+.env
+
+# Flask instance folder
+instance/
+
+# Flask app settings
+*.log
+
+# Coverage reports
+.coverage
+coverage.xml
+*.cover
+nosetests.xml
+test_*.xml
+*.bak
+
+# Distribution / packaging
+.Python
+build/
+dist/
+*.egg-info/
+*.eggs/
+
+# PyCharm and VSCode files
+.idea/
+.vscode/
+
+# Jupyter Notebook files
+.ipynb_checkpoints/
+
+# mypy
+.mypy_cache/
+
+# Pylint
+pylint-report.txt
+pylint-global.rc
+
+# VS Code settings
+.settings/
+
+# macOS-specific
+.DS_Store
+
+# Windows-specific
+Thumbs.db
+Desktop.ini

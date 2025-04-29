@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  users-service:
+    build: ./arkive-backend/users-service
+    ports:
+      - "5000:5000"
+
+  auth-service:
+    build: ./arkive-backend/auth-service
+    ports:
+      - "8081:8080"
+    profiles: ["dev"]
+
+  documents-service:
+    build: ./arkive-backend/documents-service
+    ports:
+      - "8082:8080"
+    profiles: ["dev"]
+
+  storage-service:
+    build: ./arkive-backend/storage-service
+    ports:
+      - "8001:8000"
+    profiles: ["dev"]
+
+  translation-service:
+    build: ./arkive-backend/translation-service
+    ports:
+      - "8002:8000"
+    profiles: ["dev"]
+
+  gateway-api:
+    build: ./arkive-backend/gateway-api
+    ports:
+      - "8003:8000"
+    profiles: ["dev"]
+
+  frontend:
+    build: ./arkive-dms
+    ports:
+      - "3000:3000"
