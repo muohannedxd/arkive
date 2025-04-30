@@ -12,7 +12,8 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.Text)
     role = db.Column(db.String(20), nullable=False, default="User")
     position = db.Column(db.String(100))
-    department = db.Column(db.String(100))
+    department_id = db.Column(db.Integer, db.ForeignKey("departments.id"), nullable=True)
+    department = db.relationship("Department", back_populates="users")
     phone = db.Column(db.String(50))
     status = db.Column(db.String(50), default="Active")
     hire_date = db.Column(db.Date, default=datetime.utcnow)
@@ -50,7 +51,7 @@ class User(UserMixin, db.Model):
             "email": self.email,
             "role": self.role,
             "position": self.position,
-            "department": self.department,
+            "department": self.department.name if self.department else None,
             "phone": self.phone,
             "status": self.status,
             "hire_date": (
