@@ -1,48 +1,7 @@
-import operator
-from faker import Faker
-import random
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from database import db
-
-# Initialize Faker
-fake = Faker()
-
-# Sample Data
-sample_positions = [
-    "Software Engineer",
-    "Senior Software Engineer",
-    "Lead Developer",
-    "Full Stack Developer",
-    "Product Manager",
-    "Senior Product Manager",
-    "Product Owner",
-    "Product Director",
-    "UX Designer",
-    "UI/UX Designer",
-    "Senior Designer",
-    "Design Lead",
-    "Data Analyst",
-    "Data Scientist",
-    "Data Engineer",
-    "Analytics Lead",
-]
-
-sample_statuses = ["Active", "On Leave", "Remote", "Inactive", "Probation", "Contract"]
-sample_roles = ["Admin", "User"]
-sample_departments = [
-    "Information Technology",
-    "Sales",
-    "Marketing",
-    "Human Resources",
-    "Legal",
-    "Finance",
-    "Operations",
-    "Customer Support",
-    "Quality Assurance",
-    "Research and Development",
-]
 
 
 class User(UserMixin, db.Model):
@@ -104,37 +63,23 @@ class User(UserMixin, db.Model):
         return f"<User {self.name}>"
 
 
-def generate_dummy_users(total_users=1000):
-    users = []
-    for _ in range(total_users):
-        user = User(
-            name=fake.name(),
-            email=fake.unique.email(),
-            password="password123",  # default password
-            role=random.choice(sample_roles),
-            position=random.choice(sample_positions),
-            department=random.choice(sample_departments),
-            phone=fake.phone_number(),
-            status=random.choice(sample_statuses),
-            hire_date=fake.date_between(start_date="-5y", end_date="today"),
-        )
-        users.append(user)
-    return users
-
-
-
 def apply_filter(user, key, value):
-    return user.get(key) == value
+    """Apply a single filter to a user dictionary"""
+    if isinstance(user, dict):
+        return user.get(key) == value
+    return getattr(user, key, None) == value
 
 
 def filter_users(users, filters):
+    """Filter a list of user dictionaries based on filter criteria"""
     if not filters:
-        return users
+        return [user.to_dict() if hasattr(user, 'to_dict') else user for user in users]
 
-    filtered_users = users
-    for key, value in filters.items():  # Iterate over key-value pairs
-        filtered_users = [
-            user for user in filtered_users if apply_filter(user, key, value)
-        ]
+    filtered_users = []
+    for user in users:
+        user_dict = user.to_dict() if hasattr(user, 'to_dict') else user
+        if all(apply_filter(user_dict, k, v) for k, v in filters.items()):
+            filtered_users.append(user_dict)
 
     return filtered_users
+

@@ -1,13 +1,10 @@
 from flask import Flask
 from flask_migrate import Migrate
-from flask_jwt_extended import JWTManager
 from dotenv import load_dotenv
-import os
 from routes import register_routes
 from database import db
 from config import Config
 from utils.jwt_helper import init_jwt
-import secrets
 from flask_cors import CORS
 
 # .env file

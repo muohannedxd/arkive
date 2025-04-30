@@ -22,8 +22,12 @@ services:
   users-service:
     container_name: users-service
     build: ./arkive-backend/users-service
+    volumes:
+      - ./arkive-backend/users-service:/app
     ports:
       - "5000:5000"
+    environment:
+      - FLASK_ENV=development
     env_file:
       - ./arkive-backend/users-service/.env
     depends_on:
@@ -73,6 +77,13 @@ services:
     build: ./arkive-dms
     ports:
       - "3000:3000"
+    depends_on:
+      - users-service
+      # - auth-service
+      # - documents-service
+      # - storage-service
+      # - translation-service
+      # - gateway-api
 
 volumes:
   users-db-data:

@@ -1,1 +1,1 @@
-from .users import User, generate_dummy_users, filter_users
+from .users import User, filter_users
