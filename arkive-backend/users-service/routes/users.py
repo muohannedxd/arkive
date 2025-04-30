@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 import math
 import threading
 from models import User, generate_dummy_users, filter_users
+from database import db
 
 users_bp = Blueprint("/api/users", __name__)
 
@@ -17,7 +18,6 @@ def initialize_users():
     with users_lock:
         if not users_storage:
             users_storage = generate_dummy_users(689)
-            print(f"Generated {len(users_storage)} users.")
 
 # Initialize users when the server starts
 initialize_users()
@@ -80,3 +80,20 @@ def get_users():
             "search_query": search_query,
         }
     )
+    
+@users_bp.route("/populate", methods=["POST"])
+def populate_users():
+    try:
+        count = int(request.args.get("count", 500))
+        users = generate_dummy_users(count)
+
+        for user in users:
+            if not User.get_by_email(user.email):  # avoid duplicates
+                db.session.add(user)
+
+        db.session.commit()
+        return jsonify({"status": "success", "message": f"{count} users added."}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+

@@ -44,24 +44,6 @@ sample_departments = [
     "Research and Development",
 ]
 
-# Filtering Operators
-OPERATORS = {
-    "eq": operator.eq,  # Equal
-    "ne": operator.ne,  # Not Equal
-    "gt": operator.gt,  # Greater Than
-    "lt": operator.lt,  # Less Than
-    "ge": operator.ge,  # Greater Than or Equal
-    "le": operator.le,  # Less Than or Equal
-    "contains": lambda x, y: y.lower() in x.lower(),  # Case-insensitive contains
-    "startswith": lambda x, y: x.lower().startswith(
-        y.lower()
-    ),  # Case-insensitive starts with
-    "endswith": lambda x, y: x.lower().endswith(
-        y.lower()
-    ),  # Case-insensitive ends with
-    "in": lambda x, y: x in y,  # In list
-}
-
 
 class User(UserMixin, db.Model):
     __tablename__ = "users"
@@ -72,8 +54,8 @@ class User(UserMixin, db.Model):
     role = db.Column(db.String(20), nullable=False, default="User")
     position = db.Column(db.String(100))
     department = db.Column(db.String(100))
-    phone = db.Column(db.String(20))
-    status = db.Column(db.String(20), default="Active")
+    phone = db.Column(db.String(50))
+    status = db.Column(db.String(50), default="Active")
     hire_date = db.Column(db.Date, default=datetime.utcnow)
     created_at = db.Column(
         db.DateTime(timezone=True), nullable=False, default=datetime.utcnow
@@ -124,23 +106,21 @@ class User(UserMixin, db.Model):
 
 def generate_dummy_users(total_users=1000):
     users = []
-    for i in range(total_users):
-        user = {
-            "id": i + 1,
-            "name": fake.name(),
-            "email": fake.email(),
-            "role": random.choice(sample_roles),
-            "position": random.choice(sample_positions),
-            "department": random.choice(sample_departments),
-            "phone": fake.phone_number(),
-            "status": random.choice(sample_statuses),
-            "hire_date": fake.date_between(start_date="-5y", end_date="today").strftime(
-                "%Y-%m-%d"
-            ),
-            "created_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
-        }
+    for _ in range(total_users):
+        user = User(
+            name=fake.name(),
+            email=fake.unique.email(),
+            password="password123",  # default password
+            role=random.choice(sample_roles),
+            position=random.choice(sample_positions),
+            department=random.choice(sample_departments),
+            phone=fake.phone_number(),
+            status=random.choice(sample_statuses),
+            hire_date=fake.date_between(start_date="-5y", end_date="today"),
+        )
         users.append(user)
     return users
+
 
 
 def apply_filter(user, key, value):
