@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 
 @RestController
@@ -43,10 +43,16 @@ public class AuthController {
    @PostMapping("/logout")
    public ResponseEntity<?> logout(HttpServletRequest request) {
       String token = extractTokenFromRequest(request);
-      if (token != null && jwtUtil.invalidateToken(token)) {
-         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
+      if (token == null) {
+         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+               "error", "Missing or malformed Authorization header"));
       }
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Invalid token"));
+      if (!jwtUtil.validate(token)) {
+         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+               "error", "Invalid or expired token"));
+      }
+      jwtUtil.invalidateToken(token);
+      return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
    }
 
    // Home route

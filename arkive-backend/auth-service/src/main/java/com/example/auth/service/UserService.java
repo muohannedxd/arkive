@@ -17,7 +17,7 @@ public class UserService {
     private final RestTemplate restTemplate = new RestTemplate();
 
     public LoginResponse getByEmail(String email, String password) {
-        String url = "http://localhost:5000/api/users/validate";
+        String url = "http://users-service:5000/api/users/validate";
 
         Map<String, String> requestBody = Map.of("email", email, "password", password);
         HttpHeaders headers = new HttpHeaders();
@@ -61,7 +61,6 @@ public class UserService {
                 return new LoginResponse(false, "Auth service error: " + ex.getStatusText(), null);
             }
         }
-
     }
 
 }

@@ -1,6 +1,15 @@
 version: '3.8'
 
 services:
+  # Redis for caching
+  redis:
+    container_name: arkive-redis
+    image: redis:alpine
+    ports:
+      - "6380:6379"
+    networks:
+      - backend
+
   # PostgreSQL for users-service
   users-db:
     container_name: users-db
@@ -44,6 +53,7 @@ services:
       - "8081:8080"
     depends_on:
       - users-service
+      - redis
     networks:
       - backend
 

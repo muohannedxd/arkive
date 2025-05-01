@@ -1,6 +1,0 @@
-jwt:
-  secret: mySecretKey1234567890
-  expiration: 3600000 # 1 hour in ms
-
-server:
-  port: 8080
