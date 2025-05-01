@@ -35,13 +35,17 @@ services:
     networks:
       - backend
 
-  # Other backend services (add container_name if needed)
-  auth-service:
+  # Auth Service
+    auth-service:
     container_name: auth-service
-    build: ./arkive-backend/auth-service
+    build:
+      context: ./arkive-backend/auth-service
     ports:
       - "8081:8080"
-    profiles: ["dev"]
+    depends_on:
+      - users-service
+    networks:
+      - backend
 
   documents-service:
     container_name: documents-service
@@ -79,7 +83,7 @@ services:
       - "3000:3000"
     depends_on:
       - users-service
-      # - auth-service
+      - auth-service
       # - documents-service
       # - storage-service
       # - translation-service

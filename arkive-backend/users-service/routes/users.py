@@ -3,31 +3,35 @@ from models import User, filter_users, Department
 from database import db
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 import math
 
 
 users_bp = Blueprint("/api/users", __name__)
 
 # Get all users
+
+
 @users_bp.route("/", methods=["GET"])
 def get_users():
     try:
-        users_storage = [user.to_dict() for user in User.query.order_by(User.created_at.desc()).all()]
-        
+        users_storage = [user.to_dict() for user in User.query.order_by(
+            User.created_at.desc()).all()]
+
         page = int(request.args.get("page", 1))
         per_page = int(request.args.get("per_page", 10))
         search_query = request.args.get("search", "").strip().lower()
-        
+
         filters = {
             "role": request.args.get("role"),
             "status": request.args.get("status"),
             "department": request.args.get("department"),
         }
-        filters = {k: v for k, v in filters.items() if v}  # Remove empty filters
-        
+        # Remove empty filters
+        filters = {k: v for k, v in filters.items() if v}
+
         filtered_users = filter_users(users_storage, filters)
-        
+
         if search_query:
             filtered_users = [
                 user
@@ -35,15 +39,16 @@ def get_users():
                 if search_query in user["name"].lower()
                 or search_query in user["email"].lower()
             ]
-        
+
         total_users = len(filtered_users)
-        total_pages = math.ceil(total_users / per_page) if total_users > 0 else 1
+        total_pages = math.ceil(
+            total_users / per_page) if total_users > 0 else 1
         page = max(1, min(page, total_pages))
-        
+
         start_idx = (page - 1) * per_page
         end_idx = start_idx + per_page
         paginated_users = filtered_users[start_idx:end_idx]
-        
+
         response_data = {
             "status": "success",
             "data": paginated_users,
@@ -59,27 +64,29 @@ def get_users():
             "filters": filters,
             "search_query": search_query,
         }
-        
+
         return jsonify(response_data)
-        
+
     except Exception as e:
         print(f"Error in get_users: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
-    
+
 # Get user by ID
+
+
 @users_bp.route("/<int:user_id>", methods=["GET"])
 def get_user(user_id):
     try:
         user = User.query.get(user_id)
         if not user:
             return jsonify({"status": "error", "message": "User not found"}), 404
-        
+
         return jsonify({"status": "success", "data": user.to_dict()})
-        
+
     except Exception as e:
         print(f"Error in get_user: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
-    
+
 
 # Create a new user
 @users_bp.route("/", methods=["POST"])
@@ -141,8 +148,6 @@ def create_user():
         return jsonify({"status": "error", "message": "An unexpected error occurred while creating the user."}), 500
 
 
-
-
 # Delete a user
 @users_bp.route("/<int:user_id>", methods=["DELETE"])
 def delete_user(user_id):
@@ -161,6 +166,8 @@ def delete_user(user_id):
         return jsonify({"status": "error", "message": str(e)}), 500
 
 # Update an existing user
+
+
 @users_bp.route("/<int:user_id>", methods=["PUT"])
 def update_user(user_id):
     try:
@@ -179,11 +186,12 @@ def update_user(user_id):
         user.department_id = data.get("department_id", user.department_id)
         user.phone = data.get("phone", user.phone)
         user.status = data.get("status", user.status)
-        
+
         hire_date_str = data.get("hire_date")
         if hire_date_str:
             try:
-                user.hire_date = datetime.strptime(hire_date_str, "%Y-%m-%d").date()
+                user.hire_date = datetime.strptime(
+                    hire_date_str, "%Y-%m-%d").date()
             except ValueError:
                 return jsonify({"status": "error", "message": "Invalid hire date format. Use YYYY-MM-DD."}), 400
 
@@ -194,3 +202,32 @@ def update_user(user_id):
         db.session.rollback()
         print(f"Error in update_user: {str(e)}")
         return jsonify({"status": "error", "message": "An error occurred while updating the user."}), 500
+
+
+@users_bp.route("/validate", methods=["POST"])
+def validate_user_credentials():
+    try:
+        data = request.get_json()
+        email = data.get("email")
+        password = data.get("password")
+
+        if not email:
+            return jsonify({"status": "error", "message": "Email is required."}), 400
+        if not password:
+            return jsonify({"status": "error", "message": "Password is required."}), 400
+
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            return jsonify({"status": "error", "message": "Email does not exist."}), 404
+
+        if not check_password_hash(user.password_hash, password):
+            return jsonify({"status": "error", "message": "Incorrect password."}), 401
+
+        return jsonify({
+            "status": "success",
+            "data": user.to_dict()
+        }), 200
+
+    except Exception as e:
+        print(f"Error in validate_user_credentials: {str(e)}")
+        return jsonify({"status": "error", "message": "Internal server error"}), 500
