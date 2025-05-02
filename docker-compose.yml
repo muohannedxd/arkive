@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # Redis for caching
+  # REDIS FOR CACHING
   redis:
     container_name: arkive-redis
     image: redis:alpine
@@ -86,6 +86,8 @@ services:
     build: ./arkive-backend/storage-service
     ports:
       - "8001:8000"
+    networks:
+      - backend
     profiles: ["dev"]
 
   translation-service:
@@ -93,16 +95,21 @@ services:
     build: ./arkive-backend/translation-service
     ports:
       - "8002:8000"
-    profiles: ["dev"]
+    env_file:
+      - ./arkive-backend/translation-service/.env
+    networks:
+      - backend
 
   gateway-api:
     container_name: gateway-api
     build: ./arkive-backend/gateway-api
     ports:
       - "8003:8000"
+    networks:
+      - backend
     profiles: ["dev"]
 
-  
+
   # FRONTEND SERVICE
   frontend:
     container_name: frontend
@@ -113,9 +120,9 @@ services:
       - users-service
       - auth-service
       - documents-service
-      # - storage-service
-      # - translation-service
-      # - gateway-api
+      - translation-service
+    networks:
+      - backend
 
 volumes:
   users-db-data:
