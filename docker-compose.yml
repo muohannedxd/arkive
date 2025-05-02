@@ -10,7 +10,7 @@ services:
     networks:
       - backend
 
-  # PostgreSQL for users-service
+  # DATABASES
   users-db:
     container_name: users-db
     image: postgres:16
@@ -27,7 +27,22 @@ services:
     networks:
       - backend
 
-  # Users Service
+  documents-db:
+    container_name: documents-db
+    image: postgres:16
+    environment:
+      POSTGRES_DB: documents-db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - documents-db-data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+
+  # BACKEND SERVICES
   users-service:
     container_name: users-service
     build: ./arkive-backend/users-service
@@ -44,7 +59,6 @@ services:
     networks:
       - backend
 
-  # Auth Service
   auth-service:
     container_name: auth-service
     build:
@@ -62,7 +76,10 @@ services:
     build: ./arkive-backend/documents-service
     ports:
       - "8082:8080"
-    profiles: ["dev"]
+    depends_on:
+      - documents-db
+    networks:
+      - backend
 
   storage-service:
     container_name: storage-service
@@ -85,7 +102,8 @@ services:
       - "8003:8000"
     profiles: ["dev"]
 
-  # Frontend
+  
+  # FRONTEND SERVICE
   frontend:
     container_name: frontend
     build: ./arkive-dms
@@ -94,13 +112,14 @@ services:
     depends_on:
       - users-service
       - auth-service
-      # - documents-service
+      - documents-service
       # - storage-service
       # - translation-service
       # - gateway-api
 
 volumes:
   users-db-data:
+  documents-db-data:
 
 networks:
   backend:
