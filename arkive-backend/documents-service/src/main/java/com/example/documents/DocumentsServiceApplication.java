@@ -1,4 +1,4 @@
-package com.example.documents_service;
+package com.example.documents;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
