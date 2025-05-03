@@ -1,9 +1,10 @@
 from fastapi import FastAPI, Request
-from fastkafka import FastKafka
+from kafka import KafkaConsumer, KafkaProducer
 from pydantic import BaseModel
 import os
 import json
 from typing import Optional
+import threading
 from app.translator import translate_title, translate_title_async
 from dotenv import load_dotenv
 
@@ -28,11 +29,67 @@ class TranslationResponse(BaseModel):
     document_id: Optional[str] = None
     request_id: Optional[str] = None
 
-# Configure FastKafka
-kafka_client = FastKafka(
+# Create Kafka producer
+producer = KafkaProducer(
     bootstrap_servers=os.getenv("KAFKA_BROKER", "kafka:29092"),
-    group_id="translation-group",
+    value_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
+
+# Kafka consumer function
+def consume_translation_requests():
+    consumer = KafkaConsumer(
+        "translate-requests",
+        bootstrap_servers=os.getenv("KAFKA_BROKER", "kafka:29092"),
+        group_id="translation-group",
+        auto_offset_reset='earliest',
+        enable_auto_commit=True,
+        value_deserializer=lambda v: json.loads(v.decode('utf-8'))
+    )
+    
+    print("Kafka consumer started and waiting for messages...")
+    
+    for message in consumer:
+        try:
+            data = message.value
+            print(f"Received message: {data}")
+            
+            title = data.get("title")
+            target_language = data.get("target_language")
+            document_id = data.get("document_id")
+            request_id = data.get("request_id")
+            
+            if not title or not target_language:
+                print("Missing title or target_language in message")
+                continue
+            
+            # Process the translation synchronously (async would be more complex with threading)
+            translated_title, detected_language = translate_title(title, target_language)
+            
+            # Create response
+            response = {
+                "status": "success",
+                "original_language": detected_language,
+                "target_language": target_language,
+                "original_title": title,
+                "translated_title": translated_title,
+                "document_id": document_id,
+                "request_id": request_id
+            }
+            
+            # Send response to Kafka
+            producer.send("translation-results", response)
+            print(f"Published translation result: {translated_title}")
+            
+        except Exception as e:
+            error_msg = f"Error processing translation request: {str(e)}"
+            print(error_msg)
+            producer.send(
+                "translation-errors", 
+                {
+                    "error": error_msg,
+                    "request": data if 'data' in locals() else "Unknown"
+                }
+            )
 
 @app.post("/translate/")
 async def translate(req: Request):
@@ -53,46 +110,14 @@ async def translate(req: Request):
         "translated_title": translated_title 
     }
 
-@kafka_client.subscriber("translate-requests")
-async def process_translation_request(msg: TranslationRequest) -> None:
-    """Process translation requests from Kafka"""
-    try:
-        print(f"Processing translation request: {msg.title} to {msg.target_language}")
-        translated_title, detected_language = await translate_title_async(msg.title, msg.target_language)
-        
-        # Create response payload
-        response = TranslationResponse(
-            status="success",
-            original_language=detected_language,
-            target_language=msg.target_language,
-            original_title=msg.title,
-            translated_title=translated_title,
-            document_id=msg.document_id,
-            request_id=msg.request_id
-        )
-        
-        # Publish response to Kafka
-        await kafka_client.publish("translation-results", response.model_dump_json())
-        print(f"Published translation result: {response.translated_title}")
-    except Exception as e:
-        error_msg = f"Error processing translation request: {str(e)}"
-        print(error_msg)
-        await kafka_client.publish(
-            "translation-errors", 
-            json.dumps({
-                "error": error_msg,
-                "request": msg.model_dump() if hasattr(msg, "model_dump") else str(msg)
-            })
-        )
-
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
 
+# Start consumer thread when application starts
 @app.on_event("startup")
 async def startup_event():
-    await kafka_client.start()
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    await kafka_client.stop()
+    # Start Kafka consumer in a separate thread
+    consumer_thread = threading.Thread(target=consume_translation_requests, daemon=True)
+    consumer_thread.start()
+    print("Kafka consumer thread started")

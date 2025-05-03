@@ -3,7 +3,6 @@ uvicorn
 requests
 python-dotenv
 langdetect
-fastkafka
-aiokafka
+kafka-python
 pydantic>=2.0.0
 httpx

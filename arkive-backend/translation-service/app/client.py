@@ -1,4 +1,4 @@
-from fastkafka import FastKafka
+from kafka import KafkaProducer
 from pydantic import BaseModel
 import json
 import asyncio
@@ -15,19 +15,18 @@ class TranslationRequest(BaseModel):
     document_id: Optional[str] = None
     request_id: Optional[str] = None
 
-async def send_translation_request(title: str, target_language: str, 
-                                   document_id: Optional[str] = None, 
-                                   request_id: Optional[str] = None):
+def send_translation_request(title: str, target_language: str, 
+                             document_id: Optional[str] = None, 
+                             request_id: Optional[str] = None):
     """Utility function to send a translation request to Kafka"""
-    kafka_client = FastKafka(
+    # Use kafka-python instead of FastKafka
+    producer = KafkaProducer(
         bootstrap_servers=os.getenv("KAFKA_BROKER", "kafka:29092"),
+        value_serializer=lambda v: json.dumps(v).encode('utf-8')
     )
     
     try:
-        # Start the Kafka client
-        await kafka_client.start()
-        
-        # Create and send request
+        # Create request data
         request = TranslationRequest(
             title=title,
             target_language=target_language,
@@ -36,15 +35,16 @@ async def send_translation_request(title: str, target_language: str,
         )
         
         # Publish request to Kafka
-        await kafka_client.publish("translate-requests", request.model_dump_json())
+        producer.send("translate-requests", request.model_dump())
+        producer.flush()
         print(f"Translation request sent for '{title}' to {target_language}")
         
     except Exception as e:
         print(f"Error sending translation request: {str(e)}")
     
     finally:
-        # Stop the Kafka client
-        await kafka_client.stop()
+        # Close the producer
+        producer.close()
 
 # Example usage
 if __name__ == "__main__":
@@ -58,4 +58,4 @@ if __name__ == "__main__":
     document_id = sys.argv[3] if len(sys.argv) > 3 else None
     request_id = sys.argv[4] if len(sys.argv) > 4 else None
     
-    asyncio.run(send_translation_request(title, target_language, document_id, request_id))
+    send_translation_request(title, target_language, document_id, request_id)
