@@ -72,6 +72,21 @@ services:
     networks:
       - backend
 
+  # STORAGE
+  minio:
+    image: minio/minio
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - backend
 
   # BACKEND SERVICES
   users-service:
@@ -115,11 +130,14 @@ services:
   storage-service:
     container_name: storage-service
     build: ./arkive-backend/storage-service
+    env_file:
+      - ./arkive-backend/storage-service/.env
     ports:
-      - "8001:8000"
+      - "8085:8080"
+    depends_on:
+      - minio
     networks:
       - backend
-    profiles: ["dev"]
 
   translation-service:
     container_name: translation-service
@@ -143,7 +161,6 @@ services:
       - backend
     profiles: ["dev"]
 
-
   # FRONTEND SERVICE
   frontend:
     container_name: frontend
@@ -155,12 +172,14 @@ services:
       - auth-service
       - documents-service
       - translation-service
+      - storage-service
     networks:
       - backend
 
 volumes:
   users-db-data:
   documents-db-data:
+  minio_data:
 
 networks:
   backend:
