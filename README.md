@@ -6,7 +6,7 @@ A document management system.
 
 1. Clone this repository:
 ```
-git clone https://github.com/RaidOuahioune/Intern-Dz.git
+git clone https://github.com/muohannedxd/arkive.git
 ```
 
 2. Build:
