@@ -1,5 +1,6 @@
 package com.example.documents.service;
 
+import com.example.documents.client.StorageClient;
 import com.example.documents.dto.DocumentDto;
 import com.example.documents.exception.BadRequestException;
 import com.example.documents.exception.ResourceNotFoundException;
@@ -8,18 +9,26 @@ import com.example.documents.model.Folder;
 import com.example.documents.repository.DocumentRepository;
 import com.example.documents.repository.FolderRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class DocumentServiceImpl implements DocumentService {
 
    private final DocumentRepository documentRepository;
    private final FolderRepository folderRepository;
+   private final StorageClient storageClient;
 
    @Override
    public List<DocumentDto> getAllDocuments() {
@@ -67,9 +76,10 @@ public class DocumentServiceImpl implements DocumentService {
    @Override
    @Transactional
    public DocumentDto createDocument(DocumentDto documentDto) {
-      // For now, URL is dummy
+      // For documents created without a file upload
+      // If URL provided, use it, otherwise set a placeholder
       if (documentDto.getUrl() == null || documentDto.getUrl().isEmpty()) {
-         documentDto.setUrl("https://example.com/documents/dummy-" + System.currentTimeMillis());
+         documentDto.setUrl("no-file-attached");
       }
 
       // Check if folder exists
@@ -81,6 +91,64 @@ public class DocumentServiceImpl implements DocumentService {
 
       Document savedDocument = documentRepository.save(document);
       return mapToDto(savedDocument);
+   }
+   
+   @Override
+   @Transactional
+   public DocumentDto uploadDocument(MultipartFile file, DocumentDto documentDto) {
+      if (file == null || file.isEmpty()) {
+         throw new BadRequestException("File cannot be empty");
+      }
+      
+      // Check if folder exists
+      Folder folder = folderRepository.findById(documentDto.getFolderId())
+            .orElseThrow(() -> new BadRequestException("Folder not found with id: " + documentDto.getFolderId()));
+            
+      try {
+         // Upload the file to storage service
+         String filename = storageClient.uploadFile(file);
+         log.info("File uploaded successfully with name: {}", filename);
+         
+         // Set the document URL to the uploaded file's URL
+         documentDto.setUrl(filename);
+         
+         Document document = mapToEntity(documentDto);
+         document.setFolder(folder);
+         
+         Document savedDocument = documentRepository.save(document);
+         return mapToDto(savedDocument);
+      } catch (Exception e) {
+         log.error("Error uploading file: {}", e.getMessage());
+         throw new BadRequestException("Failed to upload document: " + e.getMessage());
+      }
+   }
+   
+   @Override
+   public ResponseEntity<byte[]> downloadDocument(Long id) {
+      Document document = documentRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Document not found with id: " + id));
+            
+      String filename = document.getUrl();
+      
+      // If no file is attached to the document
+      if (filename == null || filename.equals("no-file-attached")) {
+         throw new ResourceNotFoundException("No file attached to this document");
+      }
+      
+      try {
+         // Get the file bytes from the storage service
+         byte[] fileBytes = storageClient.downloadFile(filename);
+         
+         // Set up the response headers
+         HttpHeaders headers = new HttpHeaders();
+         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+         headers.setContentDispositionFormData("attachment", filename);
+         
+         return new ResponseEntity<>(fileBytes, headers, HttpStatus.OK);
+      } catch (Exception e) {
+         log.error("Error downloading file: {}", e.getMessage());
+         throw new ResourceNotFoundException("Failed to download document: " + e.getMessage());
+      }
    }
 
    @Override
@@ -112,9 +180,25 @@ public class DocumentServiceImpl implements DocumentService {
    @Override
    @Transactional
    public void deleteDocument(Long id) {
-      if (!documentRepository.existsById(id)) {
-         throw new ResourceNotFoundException("Document not found with id: " + id);
+      Document document = documentRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Document not found with id: " + id));
+            
+      // Delete the file from storage if it exists
+      String filename = document.getUrl();
+      if (filename != null && !filename.equals("no-file-attached")) {
+         try {
+            boolean deleted = storageClient.deleteFile(filename);
+            if (deleted) {
+               log.info("Successfully deleted file from storage: {}", filename);
+            } else {
+               log.warn("Could not delete file from storage: {}", filename);
+            }
+         } catch (Exception e) {
+            log.error("Error deleting file from storage: {}", e.getMessage());
+            // Continue with document deletion even if file deletion fails
+         }
       }
+      
       documentRepository.deleteById(id);
    }
 

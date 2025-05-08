@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -48,10 +49,27 @@ public class DocumentController {
         return ResponseEntity.ok(ApiResponse.success("Category Documents retrieved successfully", documents));
     }
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<DocumentDto>> createDocument(@Valid @RequestBody DocumentDto documentDto) {
-        DocumentDto createdDocument = documentService.createDocument(documentDto);
+    @PostMapping(consumes = "multipart/form-data")
+    public ResponseEntity<ApiResponse<DocumentDto>> createDocument(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("title") String title,
+            @RequestParam("department") String department,
+            @RequestParam(value = "category", required = false) String category,
+            @RequestParam("folderId") Long folderId) {
+        
+        DocumentDto documentDto = new DocumentDto();
+        documentDto.setTitle(title);
+        documentDto.setDepartment(department);
+        documentDto.setCategory(category);
+        documentDto.setFolderId(folderId);
+        
+        DocumentDto createdDocument = documentService.uploadDocument(file, documentDto);
         return new ResponseEntity<>(ApiResponse.success("Document created successfully", createdDocument), HttpStatus.CREATED);
+    }
+
+    @GetMapping("/download/{id}")
+    public ResponseEntity<byte[]> downloadDocument(@PathVariable Long id) {
+        return documentService.downloadDocument(id);
     }
 
     @PutMapping("/{id}")
