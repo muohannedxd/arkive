@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from kafka import KafkaConsumer, KafkaProducer
 from pydantic import BaseModel
 import os
@@ -12,6 +13,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Define data models
 class TranslationRequest(BaseModel):
@@ -62,10 +72,8 @@ def consume_translation_requests():
                 print("Missing title or target_language in message")
                 continue
             
-            # Process the translation synchronously (async would be more complex with threading)
             translated_title, detected_language = translate_title(title, target_language)
             
-            # Create response
             response = {
                 "status": "success",
                 "original_language": detected_language,
@@ -76,7 +84,6 @@ def consume_translation_requests():
                 "request_id": request_id
             }
             
-            # Send response to Kafka
             producer.send("translation-results", response)
             print(f"Published translation result: {translated_title}")
             
@@ -91,7 +98,7 @@ def consume_translation_requests():
                 }
             )
 
-@app.post("/translate/")
+@app.post("/api/translation/translate")
 async def translate(req: Request):
     body = await req.json()
     title = body.get("title")
@@ -110,14 +117,13 @@ async def translate(req: Request):
         "translated_title": translated_title 
     }
 
-@app.get("/health")
+@app.get("/api/translation/health")
 async def health_check():
     return {"status": "healthy"}
 
 # Start consumer thread when application starts
 @app.on_event("startup")
 async def startup_event():
-    # Start Kafka consumer in a separate thread
     consumer_thread = threading.Thread(target=consume_translation_requests, daemon=True)
     consumer_thread.start()
     print("Kafka consumer thread started")

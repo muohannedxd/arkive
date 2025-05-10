@@ -31,7 +31,14 @@ async def proxy_request(request: Request, service: str, path: str) -> Any:
     if service not in SERVICE_URLS:
         raise HTTPException(status_code=404, detail=f"Service {service} not found")
     
-    target_url = f"{SERVICE_URLS[service]}{path}"
+    # Remove /api prefix and normalize path
+    path = path.strip('/')
+    if path.startswith('api/'):
+        path = path[4:]
+    
+    # Construct target URL, ensuring single forward slash between parts
+    service_url = SERVICE_URLS[service].rstrip('/')
+    target_url = f"{service_url}/api/{path}"
     
     # Get the request body if it exists
     body = None
@@ -53,7 +60,12 @@ async def proxy_request(request: Request, service: str, path: str) -> Any:
                 follow_redirects=True
             )
             
-            return response.json()
+            # Handle response
+            try:
+                return response.json()
+            except Exception:
+                return {"success": False, "message": f"Invalid response from {service} service", "data": None}
+
         except httpx.RequestError as exc:
             raise HTTPException(status_code=503, detail=f"Error forwarding request: {str(exc)}")
 
@@ -66,6 +78,10 @@ async def auth_proxy(request: Request, path: str):
 @app.api_route("/api/users/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
 async def users_proxy(request: Request, path: str):
     return await proxy_request(request, "users", f"/api/users/{path}")
+ 
+@app.api_route("/api/departments/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
+async def departments_proxy(request: Request, path: str):
+    return await proxy_request(request, "users", f"/api/departments/{path}")
 
 # Documents Service Routes
 @app.api_route("/api/documents/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
