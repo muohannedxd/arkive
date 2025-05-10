@@ -159,7 +159,6 @@ services:
       - "8003:8000"
     networks:
       - backend
-    profiles: ["dev"]
 
   # FRONTEND SERVICE
   frontend:
@@ -173,6 +172,7 @@ services:
       - documents-service
       - translation-service
       - storage-service
+      - gateway-api
     networks:
       - backend
 
