@@ -24,11 +24,11 @@ export const useAuthStore = create<AuthStore>((set) => ({
         password 
       });
       
-      // Check if the response contains token and user
+      // check if the response contains token and user
       if (response.data && response.data.token && response.data.user) {
         const { token, user } = response.data;
         
-        // Only update localStorage on successful login
+        // only update localStorage on successful login
         localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(user));
         
