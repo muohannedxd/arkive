@@ -52,8 +52,8 @@ export default function AddOneUserModal({
         <ModalBody className="z-10">
           <div className="z-10 flex flex-col gap-4">
             <div>
-              <FormControl id="first-name" isRequired>
-                <FormLabel>First name</FormLabel>
+              <FormControl id="full-name" isRequired>
+                <FormLabel>Full name</FormLabel>
                 <Input
                   value={oneUserForm.name}
                   onChange={(e) => setOneUserForm("name", e.target.value)}

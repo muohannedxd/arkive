@@ -166,6 +166,9 @@ services:
     build: ./arkive-dms
     ports:
       - "3000:3000"
+    volumes:
+      - ./arkive-dms:/app
+      - /app/node_modules
     depends_on:
       - users-service
       - auth-service
