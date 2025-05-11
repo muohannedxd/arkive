@@ -15,44 +15,46 @@ export default function useAuth() {
     setPassword("");
   };
 
-  const handleLogin = (e: React.FormEvent) => {
-    setLoading(true);
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setError("");
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!email || !password) {
       setLoading(false);
-      setError(
-        "Invalid email address or password!\n\n" +
-          "Creds for admin: adminuser@gmail.com: adminuser\n" +
-          "Creds for user: useruser@gmail.com: useruser"
-      );
-
+      setError("Please enter both email and password");
       return;
     }
+    
     if (!emailRegex.test(email)) {
       setLoading(false);
-      setError("Invalid email format!");
+      setError("Invalid email format");
       return;
     }
-    if (login(email, password)) {
-      setError("");
+
+    try {
+      const success = await login(email, password);
+      
+      if (success) {
+        setError("");
+        clearAuthForm();
+        navigate("/dashboard");
+      } else {
+        setError("Invalid email or password");
+      }
+    } catch (err) {
+      setError("Failed to login. Please try again.");
+      console.error("Login error:", err);
+    } finally {
       setLoading(false);
-      navigate("/dashboard");
-    } else {
-      setLoading(false);
-      setError(
-        "Invalid email address or password!\n\n" +
-          "Creds for admin: adminuser@gmail.com: adminuser\n" +
-          "Creds for user: useruser@gmail.com: useruser"
-      );
     }
-    clearAuthForm();
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
   };
 
   return {
