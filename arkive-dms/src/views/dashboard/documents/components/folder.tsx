@@ -44,14 +44,8 @@ export default function Folder(props: folderInterface) {
             variant="unstyled"
           />
           <MenuList>
-            <MenuItem onClick={() => {}} icon={<FiDownload />}>
-              Download Folder
-            </MenuItem>
             <MenuItem onClick={() => {}} icon={<FiEdit3 />}>
               Edit Folder
-            </MenuItem>
-            <MenuItem onClick={() => {}} icon={<FiLock />}>
-              Manage Access
             </MenuItem>
             <MenuItem
               color="red.600"
