@@ -18,7 +18,7 @@ import {
   AlertTitle,
 } from "@chakra-ui/react";
 import { Datepicker } from "components/datepicker/Datepicker";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useUserStore } from "../stores/users.store";
 import { roles, statuses } from "lib/configData";
 import useUsers from "../viewmodels/users.viewmodel";
@@ -36,6 +36,9 @@ export default function EditUserInfoModal({
   const [show, setShow] = useState(false);
   const handleClick = () => setShow(!show);
 
+  // Track if initial fetch has happened
+  const hasInitialFetchRef = useRef(false);
+
   /**
    * get data from zustand store of the user
    */
@@ -51,17 +54,31 @@ export default function EditUserInfoModal({
     formLoading,
     formError,
     formSuccess,
-    setFormError
+    setFormError,
+    setFormSuccess
   } = useUsers();
 
   /**
-   * Fetch user data when modal opens
+   * Reset form state and fetch user data when modal opens
    */
   useEffect(() => {
+    // Only fetch user data when the modal is open and we have a userId
     if (isOpen && userId) {
-      fetchUserById(userId);
+      // Reset form messages
+      setFormSuccess("");
+      setFormError("");
+      
+      // Only fetch user data once when modal opens to prevent infinite loop
+      if (!hasInitialFetchRef.current) {
+        fetchUserById(userId);
+        hasInitialFetchRef.current = true;
+      }
+    } else {
+      // Reset the ref when modal is closed
+      hasInitialFetchRef.current = false;
     }
-  }, [fetchUserById, isOpen, userId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, userId, setFormSuccess, setFormError]);
 
   /**
    * Handle date change
