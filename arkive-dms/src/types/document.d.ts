@@ -1,6 +1,7 @@
 export type FolderObject = {
    id: number;
    title: string;
+   department: string;
    createdAt: string;
    updatedAt: string;
  };

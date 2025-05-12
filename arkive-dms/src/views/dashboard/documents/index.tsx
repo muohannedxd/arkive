@@ -11,8 +11,12 @@ import FolderContent from "./components/FolderContent";
 import useFolders from "./viewmodels/folders.viewmodel";
 import useDocument from "./viewmodels/document.viewmodel";
 import { useDocumentStore } from "./stores/document.store";
+import { useAuthStore } from "views/auth/stores/auth.store";
 
 export default function Documents() {
+  // Get user information
+  const { user } = useAuthStore();
+  
   // Folder hooks
   const {
     foldersData,
@@ -35,6 +39,7 @@ export default function Documents() {
     isOpenDeleteFolderModal,
     onCloseDeleteFolderModal,
     handleConfirmDelete,
+    userDepartment,
   } = useFolders();
 
   // Document hooks
@@ -52,6 +57,9 @@ export default function Documents() {
   // Get current folder details
   const currentFolder = foldersData.find(folder => folder.id === currentFolderId);
 
+  // Check if user has a department associated
+  const canCreateFolder = !!userDepartment;
+
   return (
     <div className="mb-6 mt-3 h-full">
       <div className="h-fit">
@@ -66,12 +74,19 @@ export default function Documents() {
           <>
             {/* Folders */}
             <div className="mb-5 mt-5 flex items-center justify-between">
-              <h4 className="text-2xl font-bold text-navy-700">Folders</h4>
+              <h4 className="text-2xl font-bold text-navy-700">
+                {canCreateFolder ? 
+                  `Folders (${userDepartment} Department)` : 
+                  'Folders'
+                }
+              </h4>
               <Button
                 onClick={onOpenCreateFolderModal}
                 leftIcon={<TiFolderAdd />}
                 variant={"brand"}
                 className="bg-mainbrand text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-800"
+                isDisabled={!canCreateFolder}
+                title={!canCreateFolder ? "You must be associated with a department to create folders" : ""}
               >
                 Create a Folder
               </Button>
@@ -101,7 +116,10 @@ export default function Documents() {
                   No Folders Yet
                 </p>
                 <p className="text-gray-600">
-                  Click 'Create a Folder' to add your first folder.
+                  {canCreateFolder 
+                    ? "Click 'Create a Folder' to add your first folder."
+                    : "You must be assigned to a department to create folders. Contact your administrator."
+                  }
                 </p>
               </div>
             ) : (
@@ -111,9 +129,16 @@ export default function Documents() {
                     key={folder.id}
                     id={folder.id}
                     title={folder.title}
+                    department={folder.department}
                     createdAt={folder.createdAt}
                     onNavigate={navigateToFolder}
-                    onEdit={(id, title) => startEditFolder({ id, title, createdAt: folder.createdAt, updatedAt: folder.updatedAt })}
+                    onEdit={(id, title) => startEditFolder({ 
+                      id, 
+                      title, 
+                      department: folder.department,
+                      createdAt: folder.createdAt, 
+                      updatedAt: folder.updatedAt 
+                    })}
                     onDelete={confirmDeleteFolder}
                     formatDate={formatDate}
                   />
@@ -132,47 +157,34 @@ export default function Documents() {
                 />
               </div>
             ) : documentsError ? (
-              <div className="mt-10 flex min-h-[40vh] flex-col items-center justify-center space-y-4">
-                <p className="text-3xl font-semibold text-red-600 md:text-4xl">
-                  Error Loading Documents...
+              <div className="mt-10 flex min-h-[40vh] flex-col items-center justify-center space-y-3">
+                <p className="text-xl font-semibold text-red-600">
+                  Error Loading Documents
                 </p>
-                <p className="text-gray-700">
-                  Something went wrong while fetching the documents data.
-                </p>
+                <p className="text-gray-700">{documentsError}</p>
                 <Button
-                  variant={"solid"}
-                  colorScheme={"red"}
                   onClick={retryDocumentsFetch}
-                  className="rounded-md bg-red-600 px-6 py-2 text-white shadow-md transition duration-200 hover:bg-red-500"
+                  variant={"brand"}
+                  className="bg-mainbrand text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-800"
                 >
                   Retry
                 </Button>
               </div>
-            ) : documentsData.length === 0 ? (
-              <div className="mt-10 flex min-h-[40vh] flex-col items-center justify-center space-y-4">
-                <p className="text-3xl font-semibold md:text-4xl">
-                  No Documents To Show...
-                </p>
-                <p className="text-gray-700">
-                  There are no documents loaded yet, try adding new ones.
-                </p>
-              </div>
             ) : (
               <>
                 <div className="mb-5 mt-10 flex items-center justify-between">
-                  <h4 className="text-2xl font-bold text-navy-700">Files</h4>
+                  <h4 className="text-2xl font-bold text-navy-700">Documents</h4>
                   <Button
                     onClick={onOpenAddDocumentModal}
                     leftIcon={<RiFileAddLine />}
                     variant={"brand"}
                     className="bg-mainbrand text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-800"
                   >
-                    Add a Document
+                    Add Document
                   </Button>
                 </div>
 
-                {/* Documents */}
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3">
                   {documentsData.map((doc) => (
                     <FileCard
                       key={doc.id}

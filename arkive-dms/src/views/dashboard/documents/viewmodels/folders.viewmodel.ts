@@ -5,6 +5,7 @@ import { FolderObject } from "types/document";
 import axiosClient from "lib/axios";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@chakra-ui/react";
+import { useAuthStore } from "views/auth/stores/auth.store";
 
 export default function useFolders() {
   // State for create/edit folder form
@@ -13,6 +14,10 @@ export default function useFolders() {
 
   // Toast for notifications
   const toast = useToast();
+  
+  // Get user information from auth store to determine department
+  const { user } = useAuthStore();
+  const userDepartment = user?.department || "";
 
   // Get folder store data and actions
   const {
@@ -33,7 +38,12 @@ export default function useFolders() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await axiosClient.get("/folders");
+      // Use the department-specific endpoint if user has a department
+      const endpoint = userDepartment 
+        ? `/folders/department/${encodeURIComponent(userDepartment)}`
+        : "/folders";
+        
+      const response = await axiosClient.get(endpoint);
       if (response.data?.data) {
         setFoldersData(response.data.data);
       }
@@ -43,7 +53,7 @@ export default function useFolders() {
     } finally {
       setIsLoading(false);
     }
-  }, [setFoldersData, setIsLoading, setError]);
+  }, [setFoldersData, setIsLoading, setError, userDepartment]);
 
   // Fetch folders on component mount
   useEffect(() => {
@@ -84,6 +94,18 @@ export default function useFolders() {
       });
       return;
     }
+    
+    // Ensure user has a department before creating folders
+    if (!userDepartment) {
+      toast({
+        title: "Department Required",
+        description: "You must be associated with a department to create folders",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
 
     setIsLoading(true);
     
@@ -91,7 +113,8 @@ export default function useFolders() {
       if (editFolderId) {
         // Update existing folder
         await axiosClient.put(`/folders/${editFolderId}`, {
-          title: folderTitle.trim()
+          title: folderTitle.trim(),
+          department: userDepartment // Include department but backend ignores it during update
         });
         
         toast({
@@ -102,9 +125,10 @@ export default function useFolders() {
           isClosable: true,
         });
       } else {
-        // Create new folder
+        // Create new folder with department
         await axiosClient.post("/folders", {
-          title: folderTitle.trim()
+          title: folderTitle.trim(),
+          department: userDepartment
         });
         
         toast({
@@ -271,5 +295,8 @@ export default function useFolders() {
     
     // Utils
     fetchFolders,
+    
+    // User info
+    userDepartment,
   };
 }
