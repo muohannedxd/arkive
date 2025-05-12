@@ -1,8 +1,8 @@
 export type FolderObject = {
    id: number;
    title: string;
-   description: string;
-   owner: string;
+   createdAt: string;
+   updatedAt: string;
  };
 
 export type DocumentObject = {

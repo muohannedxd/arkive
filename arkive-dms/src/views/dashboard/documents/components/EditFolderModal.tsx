@@ -11,7 +11,7 @@ import {
   Input,
 } from "@chakra-ui/react";
 
-interface CreateFolderModalProps {
+interface EditFolderModalProps {
   isOpen: boolean;
   onClose: () => void;
   folderTitle: string;
@@ -20,15 +20,15 @@ interface CreateFolderModalProps {
   isLoading: boolean;
 }
 
-export default function CreateFolderModal({
+export default function EditFolderModal({
   isOpen,
   onClose,
   folderTitle,
   setFolderTitle,
   handleSubmit,
   isLoading,
-}: CreateFolderModalProps) {
-  const handleCreate = () => {
+}: EditFolderModalProps) {
+  const handleSave = () => {
     handleSubmit();
     onClose();
   };
@@ -37,7 +37,7 @@ export default function CreateFolderModal({
     <Modal onClose={onClose} isOpen={isOpen} isCentered size="2xl">
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Create a Folder</ModalHeader>
+        <ModalHeader>Edit Folder</ModalHeader>
         <ModalCloseButton />
         <ModalBody className="z-10">
           <div className="z-10 flex flex-col gap-4">
@@ -47,19 +47,19 @@ export default function CreateFolderModal({
                 <Input
                   value={folderTitle}
                   onChange={(e) => setFolderTitle(e.target.value)}
-                  placeholder="Registrants CVs"
+                  placeholder="Enter folder title"
                   borderRadius="lg"
                 />
               </FormControl>
             </div>
             <div className="my-4 md:my-6">
               <Button
-                onClick={handleCreate}
+                onClick={handleSave}
                 isLoading={isLoading}
                 variant={"error"}
                 className="w-full bg-mainbrand text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-800"
               >
-                Create Folder
+                Save Changes
               </Button>
             </div>
           </div>

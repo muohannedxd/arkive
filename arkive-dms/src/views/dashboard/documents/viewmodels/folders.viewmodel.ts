@@ -1,40 +1,275 @@
 import { useDisclosure } from "@chakra-ui/hooks";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useFolderStore } from "../stores/folder.store";
+import { FolderObject } from "types/document";
+import axiosClient from "lib/axios";
+import { formatDistanceToNow } from "date-fns";
+import { useToast } from "@chakra-ui/react";
 
 export default function useFolders() {
+  // State for create/edit folder form
   const [folderTitle, setFolderTitle] = useState("");
-  const [folderDescription, setFolderDescription] = useState("");
+  const [editFolderId, setEditFolderId] = useState<number | null>(null);
 
+  // Toast for notifications
+  const toast = useToast();
+
+  // Get folder store data and actions
+  const {
+    foldersData,
+    setFoldersData,
+    isLoading,
+    setIsLoading,
+    error,
+    setError,
+    currentFolderId,
+    setCurrentFolderId
+  } = useFolderStore();
+
+  /**
+   * Fetch folders from backend
+   */
+  const fetchFolders = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await axiosClient.get("/folders");
+      if (response.data?.data) {
+        setFoldersData(response.data.data);
+      }
+    } catch (err: any) {
+      console.error("Error fetching folders:", err);
+      setError(err.response?.data?.message || "Failed to fetch folders");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [setFoldersData, setIsLoading, setError]);
+
+  // Fetch folders on component mount
+  useEffect(() => {
+    fetchFolders();
+  }, [fetchFolders]);
+
+  /**
+   * Format date for display
+   */
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return formatDistanceToNow(date, { addSuffix: true });
+    } catch {
+      return "Unknown date";
+    }
+  };
+
+  /**
+   * Form handlers
+   */
   const clearCreateFolderForm = () => {
     setFolderTitle("");
-    setFolderDescription("");
-  };
-  /**
-   * Submission
-   */
-  const handleSubmit = () => {
-    console.log(folderTitle, folderDescription);
-    clearCreateFolderForm();
+    setEditFolderId(null);
   };
 
   /**
-   * modals
+   * Create new folder or update existing one
+   */
+  const handleSubmit = async () => {
+    if (!folderTitle.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please enter a folder title",
+        status: "warning",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      if (editFolderId) {
+        // Update existing folder
+        await axiosClient.put(`/folders/${editFolderId}`, {
+          title: folderTitle.trim()
+        });
+        
+        toast({
+          title: "Folder updated",
+          description: "The folder has been updated successfully",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+      } else {
+        // Create new folder
+        await axiosClient.post("/folders", {
+          title: folderTitle.trim()
+        });
+        
+        toast({
+          title: "Folder created",
+          description: "The folder has been created successfully",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+      
+      // Refetch folders
+      fetchFolders();
+      clearCreateFolderForm();
+    } catch (err: any) {
+      console.error("Error saving folder:", err);
+      toast({
+        title: "Error saving folder",
+        description: err.response?.data?.message || "Failed to save folder",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Delete a folder
+   */
+  const deleteFolder = async (folderId: number) => {
+    setIsLoading(true);
+    try {
+      await axiosClient.delete(`/folders/${folderId}`);
+      toast({
+        title: "Folder deleted",
+        description: "The folder has been deleted successfully",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+      
+      // Refetch folders
+      fetchFolders();
+    } catch (err: any) {
+      console.error("Error deleting folder:", err);
+      toast({
+        title: "Error deleting folder",
+        description: err.response?.data?.message || "Failed to delete folder",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Handle folder navigation
+   */
+  const navigateToFolder = (folderId: number) => {
+    setCurrentFolderId(folderId);
+  };
+
+  const navigateBack = () => {
+    setCurrentFolderId(null);
+  };
+
+  /**
+   * Edit folder
+   */
+  const startEditFolder = (folder: FolderObject) => {
+    setFolderTitle(folder.title);
+    setEditFolderId(folder.id);
+    onOpenEditFolderModal();
+  };
+
+  /**
+   * Modals
    */
   const {
     isOpen: isOpenCreateFolderModal,
     onOpen: onOpenCreateFolderModal,
-    onClose: onCloseCreateFolderModal,
+    onClose: onCloseCreateFolderModalRaw,
+  } = useDisclosure();
+  
+  const {
+    isOpen: isOpenEditFolderModal,
+    onOpen: onOpenEditFolderModal,
+    onClose: onCloseEditFolderModalRaw,
+  } = useDisclosure();
+  
+  const {
+    isOpen: isOpenDeleteFolderModal,
+    onOpen: onOpenDeleteFolderModal,
+    onClose: onCloseDeleteFolderModal,
   } = useDisclosure();
 
+  const [folderToDelete, setFolderToDelete] = useState<number | null>(null);
+
+  const onCloseCreateFolderModal = () => {
+    onCloseCreateFolderModalRaw();
+    clearCreateFolderForm();
+  };
+
+  const onCloseEditFolderModal = () => {
+    onCloseEditFolderModalRaw();
+    clearCreateFolderForm();
+  };
+
+  const confirmDeleteFolder = (folderId: number) => {
+    setFolderToDelete(folderId);
+    onOpenDeleteFolderModal();
+  };
+
+  const handleConfirmDelete = async () => {
+    if (folderToDelete !== null) {
+      await deleteFolder(folderToDelete);
+      onCloseDeleteFolderModal();
+      setFolderToDelete(null);
+    }
+  };
+
   return {
+    // Folder data
+    foldersData,
+    isLoading,
+    error,
+    formatDate,
+    
+    // Form state
     folderTitle,
     setFolderTitle,
-    folderDescription,
-    setFolderDescription,
     clearCreateFolderForm,
     handleSubmit,
+    editFolderId,
+    
+    // Navigation
+    currentFolderId,
+    navigateToFolder,
+    navigateBack,
+    
+    // Folder actions
+    startEditFolder,
+    confirmDeleteFolder,
+    
+    // Modals - Create
     isOpenCreateFolderModal,
     onOpenCreateFolderModal,
     onCloseCreateFolderModal,
+    
+    // Modals - Edit
+    isOpenEditFolderModal,
+    onOpenEditFolderModal,
+    onCloseEditFolderModal,
+    
+    // Modals - Delete
+    isOpenDeleteFolderModal,
+    onCloseDeleteFolderModal,
+    handleConfirmDelete,
+    folderToDelete,
+    
+    // Utils
+    fetchFolders,
   };
 }
