@@ -30,7 +30,6 @@ export default function DeleteSelectedUsersModal({
     formSuccess, 
     setFormSuccess, 
     setFormError,
-    setSelectedUsers 
   } = useUsers();
 
   /**
@@ -44,21 +43,26 @@ export default function DeleteSelectedUsersModal({
   }, [isOpen, setFormSuccess, setFormError]);
 
   /**
+   * Custom close handler to ensure selected users are cleared
+   */
+  const handleClose = () => {
+    onClose();
+  };
+
+  /**
    * Submission
    */
   const handleSubmit = async () => {
     const success = await deleteSelectedUsers(selectedUsers);
     if (success) {
-      // Explicitly clear selected users to ensure UI is updated
-      setSelectedUsers([]);
       setTimeout(() => {
-        onClose();
+        handleClose();
       }, 1000);
     }
   };
 
   return (
-    <Modal onClose={onClose} isOpen={isOpen} isCentered size="md">
+    <Modal onClose={handleClose} isOpen={isOpen} isCentered size="md">
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>Delete Selected Users</ModalHeader>

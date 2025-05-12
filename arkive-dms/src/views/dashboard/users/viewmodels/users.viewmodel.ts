@@ -291,8 +291,12 @@ export default function useUsers() {
     try {
       // Using Promise.all to delete multiple users in parallel
       await Promise.all(userIds.map(id => axiosClient.delete(`/users/${id}`)));
-      setFormSuccess("Selected users deleted successfully!");
+      
+      // Clear selection after successful deletion
       setSelectedUsers([]);
+      setIsAllSelected(false);
+      
+      setFormSuccess("Selected users deleted successfully!");
       await fetchUsers();
       return true;
     } catch (error: any) {
@@ -370,6 +374,7 @@ export default function useUsers() {
     isAllSelected,
     handleSelectAll,
     setSelectedUsers,
+    setIsAllSelected,
     handleUserSelect,
     isLoading,
     error,
