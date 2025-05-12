@@ -13,9 +13,7 @@ import {
   InputGroup,
   InputRightElement,
   Spinner,
-  Alert,
-  AlertIcon,
-  AlertTitle,
+  useToast,
 } from "@chakra-ui/react";
 import { Datepicker } from "components/datepicker/Datepicker";
 import { useState, useEffect, useRef } from "react";
@@ -36,6 +34,9 @@ export default function EditUserInfoModal({
   const [show, setShow] = useState(false);
   const handleClick = () => setShow(!show);
 
+  // Initialize toast for form validation errors
+  const toast = useToast();
+
   // Track if initial fetch has happened
   const hasInitialFetchRef = useRef(false);
 
@@ -52,10 +53,7 @@ export default function EditUserInfoModal({
     fetchUserById,
     updateUser,
     formLoading,
-    formError,
-    formSuccess,
-    setFormError,
-    setFormSuccess
+    setFormError
   } = useUsers();
 
   /**
@@ -65,7 +63,6 @@ export default function EditUserInfoModal({
     // Only fetch user data when the modal is open and we have a userId
     if (isOpen && userId) {
       // Reset form messages
-      setFormSuccess("");
       setFormError("");
       
       // Only fetch user data once when modal opens to prevent infinite loop
@@ -78,7 +75,7 @@ export default function EditUserInfoModal({
       hasInitialFetchRef.current = false;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, userId, setFormSuccess, setFormError]);
+  }, [isOpen, userId, setFormError]);
 
   /**
    * Handle date change
@@ -93,16 +90,20 @@ export default function EditUserInfoModal({
   const handleSubmit = async () => {
     // Basic validation
     if (!oneUserForm.name || !oneUserForm.email) {
-      setFormError("Name and email are required");
+      toast({
+        title: "Missing Information",
+        description: "Name and email are required",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
       return;
     }
 
     const success = await updateUser(userId);
     if (success) {
-      setTimeout(() => {
-        clearOneUserForm();
-        onClose();
-      }, 1500);
+      clearOneUserForm();
+      onClose();
     }
   };
 
@@ -114,20 +115,6 @@ export default function EditUserInfoModal({
         <ModalCloseButton />
         <ModalBody className="z-10">
           <div className="z-10 flex flex-col gap-4">
-            {formError && (
-              <Alert status="error" borderRadius="lg" mb={3}>
-                <AlertIcon />
-                <AlertTitle>{formError}</AlertTitle>
-              </Alert>
-            )}
-
-            {formSuccess && (
-              <Alert status="success" borderRadius="lg" mb={3}>
-                <AlertIcon />
-                <AlertTitle>{formSuccess}</AlertTitle>
-              </Alert>
-            )}
-
             <div>
               <FormControl id="full-name" isRequired>
                 <FormLabel>Full name</FormLabel>

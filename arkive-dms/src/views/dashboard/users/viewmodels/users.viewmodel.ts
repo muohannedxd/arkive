@@ -1,6 +1,6 @@
 import { SortingState } from "@tanstack/react-table";
 import { useCallback, useEffect, useState } from "react";
-import { useDisclosure } from "@chakra-ui/react";
+import { useDisclosure, useToast } from "@chakra-ui/react";
 import axiosClient from "lib/axios";
 import { UserRowObj, UserObject } from "types/user";
 import { useUserStore } from "../stores/users.store";
@@ -22,6 +22,9 @@ export default function useUsers() {
     setOneUserForm,
     clearOneUserForm
   } = useUserStore();
+
+  // Initialize toast
+  const toast = useToast();
 
   // get departments from the departments viewmodel
   const { departments } = useDepartments();
@@ -123,27 +126,42 @@ export default function useUsers() {
       console.log("API response:", response.data);
       
       if (response.data.status === "error") {
-        setFormError(response.data.message || "Failed to create user");
+        toast({
+          title: "Error Creating User",
+          description: response.data.message || "Failed to create user",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
         return false;
       }
       
-      setFormSuccess("User created successfully!");
+      toast({
+        title: "User Created",
+        description: "The user has been created successfully",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+      
       clearOneUserForm();
       await fetchUsers();
       return true;
     } catch (error: any) {
       console.error("Failed to create user:", error);
-      if (error.response) {
-        console.error("Response data:", error.response.data);
-        console.error("Response status:", error.response.status);
-        
-        const errorMessage = error.response.data?.message || 
-                            (error.response.data?.status === "error" && error.response.data?.data) || 
-                            "Failed to create user";
-        setFormError(errorMessage);
-      } else {
-        setFormError("Failed to connect to the server");
-      }
+      
+      const errorMessage = error.response?.data?.message || 
+                           (error.response?.data?.status === "error" && error.response?.data?.data) || 
+                           "Failed to create user";
+      
+      toast({
+        title: "Error Creating User",
+        description: errorMessage,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      
       return false;
     } finally {
       setFormLoading(false);
@@ -195,26 +213,41 @@ export default function useUsers() {
       console.log("API response:", response.data);
       
       if (response.data.status === "error") {
-        setFormError(response.data.message || "Failed to update user");
+        toast({
+          title: "Error Updating User",
+          description: response.data.message || "Failed to update user",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
         return false;
       }
       
-      setFormSuccess("User updated successfully!");
+      toast({
+        title: "User Updated",
+        description: "The user has been updated successfully",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+      
       await fetchUsers();
       return true;
     } catch (error: any) {
       console.error("Failed to update user:", error);
-      if (error.response) {
-        console.error("Response data:", error.response.data);
-        console.error("Response status:", error.response.status);
-        
-        const errorMessage = error.response.data?.message || 
-                            (error.response.data?.status === "error" && error.response.data?.data) || 
-                            "Failed to update user";
-        setFormError(errorMessage);
-      } else {
-        setFormError("Failed to connect to the server");
-      }
+      
+      const errorMessage = error.response?.data?.message || 
+                          (error.response?.data?.status === "error" && error.response?.data?.data) || 
+                          "Failed to update user";
+      
+      toast({
+        title: "Error Updating User",
+        description: errorMessage,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      
       return false;
     } finally {
       setFormLoading(false);
@@ -231,12 +264,28 @@ export default function useUsers() {
     
     try {
       await axiosClient.delete(`/users/${userId}`);
-      setFormSuccess("User deleted successfully!");
+      
+      toast({
+        title: "User Deleted",
+        description: "The user has been deleted successfully",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+      
       await fetchUsers();
       return true;
     } catch (error: any) {
       console.error("Failed to delete user:", error);
-      setFormError(error.response?.data?.message || "Failed to delete user");
+      
+      toast({
+        title: "Error Deleting User",
+        description: error.response?.data?.message || "Failed to delete user",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      
       return false;
     } finally {
       setFormLoading(false);
@@ -258,12 +307,27 @@ export default function useUsers() {
       setSelectedUsers([]);
       setIsAllSelected(false);
       
-      setFormSuccess("Selected users deleted successfully!");
+      toast({
+        title: "Users Deleted",
+        description: `${userIds.length} user(s) have been deleted successfully`,
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+      
       await fetchUsers();
       return true;
     } catch (error: any) {
       console.error("Failed to delete users:", error);
-      setFormError(error.response?.data?.message || "Failed to delete users");
+      
+      toast({
+        title: "Error Deleting Users",
+        description: error.response?.data?.message || "Failed to delete users",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      
       return false;
     } finally {
       setFormLoading(false);

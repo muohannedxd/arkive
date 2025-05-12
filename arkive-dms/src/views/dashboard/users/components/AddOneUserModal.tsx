@@ -13,9 +13,7 @@ import {
   InputGroup,
   InputRightElement,
   Spinner,
-  Alert,
-  AlertIcon,
-  AlertTitle,
+  useToast,
 } from "@chakra-ui/react";
 import { Datepicker } from "components/datepicker/Datepicker";
 import { useState, useEffect } from "react";
@@ -33,6 +31,9 @@ export default function AddOneUserModal({
   /* password */
   const [show, setShow] = useState(false);
   const handleClick = () => setShow(!show);
+  
+  // Initialize toast for form validation errors
+  const toast = useToast();
 
   /**
    * get data from zustand store of the user
@@ -46,10 +47,7 @@ export default function AddOneUserModal({
     departments,
     createUser,
     formLoading,
-    formError,
-    formSuccess,
     setFormError,
-    setFormSuccess
   } = useUsers();
 
   /**
@@ -57,10 +55,9 @@ export default function AddOneUserModal({
    */
   useEffect(() => {
     if (isOpen) {
-      setFormSuccess("");
       setFormError("");
     }
-  }, [isOpen, setFormSuccess, setFormError]);
+  }, [isOpen, setFormError]);
 
   /**
    * Handle date change
@@ -75,16 +72,20 @@ export default function AddOneUserModal({
   const handleSubmit = async () => {
     // Basic validation
     if (!oneUserForm.name || !oneUserForm.email || !oneUserForm.password) {
-      setFormError("Name, email and password are required");
+      toast({
+        title: "Missing Information",
+        description: "Name, email and password are required",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
       return;
     }
 
     const success = await createUser();
     if (success) {
-      setTimeout(() => {
-        clearOneUserForm();
-        onClose();
-      }, 1500);
+      clearOneUserForm();
+      onClose();
     }
   };
 
@@ -96,20 +97,6 @@ export default function AddOneUserModal({
         <ModalCloseButton />
         <ModalBody className="z-10">
           <div className="z-10 flex flex-col gap-4">
-            {formError && (
-              <Alert status="error" borderRadius="lg" mb={3}>
-                <AlertIcon />
-                <AlertTitle>{formError}</AlertTitle>
-              </Alert>
-            )}
-
-            {formSuccess && (
-              <Alert status="success" borderRadius="lg" mb={3}>
-                <AlertIcon />
-                <AlertTitle>{formSuccess}</AlertTitle>
-              </Alert>
-            )}
-
             <div>
               <FormControl id="full-name" isRequired>
                 <FormLabel>Full name</FormLabel>
