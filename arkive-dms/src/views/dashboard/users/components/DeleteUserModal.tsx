@@ -6,7 +6,12 @@ import {
   ModalCloseButton,
   ModalBody,
   Button,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  Spinner,
 } from "@chakra-ui/react";
+import useUsers from "../viewmodels/users.viewmodel";
 
 export default function DeleteUserModal({
   isOpen,
@@ -17,12 +22,18 @@ export default function DeleteUserModal({
   onClose: () => void;
   userId: number;
 }) {
+  const { deleteUser, formLoading, formError, formSuccess } = useUsers();
 
   /**
    * Submission
    */
-  const handleSubmit = () => {
-    onClose();
+  const handleSubmit = async () => {
+    const success = await deleteUser(userId);
+    if (success) {
+      setTimeout(() => {
+        onClose();
+      }, 1000);
+    }
   };
 
   return (
@@ -33,7 +44,21 @@ export default function DeleteUserModal({
         <ModalCloseButton />
         <ModalBody className="z-10">
           <div className="z-10 flex flex-col gap-4">
-            <div className=" font-bold">
+            {formError && (
+              <Alert status="error" borderRadius="lg" mb={3}>
+                <AlertIcon />
+                <AlertTitle>{formError}</AlertTitle>
+              </Alert>
+            )}
+
+            {formSuccess && (
+              <Alert status="success" borderRadius="lg" mb={3}>
+                <AlertIcon />
+                <AlertTitle>{formSuccess}</AlertTitle>
+              </Alert>
+            )}
+            
+            <div className="font-bold">
               This action is permanent and you cannot recover the user. Are you
               sure you want to remove this user?
             </div>
@@ -41,9 +66,11 @@ export default function DeleteUserModal({
               <Button
                 onClick={handleSubmit}
                 variant={"error"}
+                isLoading={formLoading}
+                disabled={formLoading}
                 className="w-full bg-red-700 text-base font-medium text-white transition duration-200 hover:bg-red-600 active:bg-red-800"
               >
-                Delete
+                {formLoading ? <Spinner size="sm" /> : "Delete"}
               </Button>
             </div>
           </div>

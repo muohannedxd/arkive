@@ -12,11 +12,16 @@ import {
   Select,
   InputGroup,
   InputRightElement,
+  Spinner,
+  Alert,
+  AlertIcon,
+  AlertTitle,
 } from "@chakra-ui/react";
 import { Datepicker } from "components/datepicker/Datepicker";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUserStore } from "../stores/users.store";
-import { departments, roles, statuses } from "lib/configData";
+import { roles, statuses } from "lib/configData";
+import useUsers from "../viewmodels/users.viewmodel";
 
 export default function AddOneUserModal({
   isOpen,
@@ -35,12 +40,52 @@ export default function AddOneUserModal({
   const { oneUserForm, setOneUserForm, clearOneUserForm } = useUserStore();
 
   /**
+   * Get departments and user operations from viewmodel
+   */
+  const {
+    departments,
+    createUser,
+    formLoading,
+    formError,
+    formSuccess,
+    setFormError,
+    setFormSuccess
+  } = useUsers();
+
+  /**
+   * Reset form state when the modal is opened
+   */
+  useEffect(() => {
+    if (isOpen) {
+      setFormSuccess("");
+      setFormError("");
+    }
+  }, [isOpen, setFormSuccess, setFormError]);
+
+  /**
+   * Handle date change
+   */
+  const handleDateChange = (date: Date) => {
+    setOneUserForm("hire_date", date);
+  };
+
+  /**
    * Submission
    */
-  const handleSubmit = () => {
-    console.log(oneUserForm);
-    clearOneUserForm();
-    onClose();
+  const handleSubmit = async () => {
+    // Basic validation
+    if (!oneUserForm.name || !oneUserForm.email || !oneUserForm.password) {
+      setFormError("Name, email and password are required");
+      return;
+    }
+
+    const success = await createUser();
+    if (success) {
+      setTimeout(() => {
+        clearOneUserForm();
+        onClose();
+      }, 1500);
+    }
   };
 
   return (
@@ -51,6 +96,20 @@ export default function AddOneUserModal({
         <ModalCloseButton />
         <ModalBody className="z-10">
           <div className="z-10 flex flex-col gap-4">
+            {formError && (
+              <Alert status="error" borderRadius="lg" mb={3}>
+                <AlertIcon />
+                <AlertTitle>{formError}</AlertTitle>
+              </Alert>
+            )}
+
+            {formSuccess && (
+              <Alert status="success" borderRadius="lg" mb={3}>
+                <AlertIcon />
+                <AlertTitle>{formSuccess}</AlertTitle>
+              </Alert>
+            )}
+
             <div>
               <FormControl id="full-name" isRequired>
                 <FormLabel>Full name</FormLabel>
@@ -131,8 +190,10 @@ export default function AddOneUserModal({
                   placeholder="Select department"
                   borderRadius="lg"
                 >
-                  {departments.map((department) => (
-                    <option key={department}>{department}</option>
+                  {departments.map((dept) => (
+                    <option key={dept.id} value={dept.name}>
+                      {dept.name}
+                    </option>
                   ))}
                 </Select>
               </FormControl>
@@ -149,7 +210,10 @@ export default function AddOneUserModal({
             <div>
               <FormControl id="hire-date" isRequired>
                 <FormLabel>Hire Date</FormLabel>
-                <Datepicker position="relative" />
+                <Datepicker 
+                  position="relative" 
+                  onChange={handleDateChange}
+                />
               </FormControl>
             </div>
             <div>
@@ -171,9 +235,11 @@ export default function AddOneUserModal({
               <Button
                 onClick={handleSubmit}
                 variant={"brand"}
+                isLoading={formLoading}
+                disabled={formLoading}
                 className="w-full bg-mainbrand text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-800"
               >
-                Add the User
+                {formLoading ? <Spinner size="sm" /> : "Add the User"}
               </Button>
             </div>
           </div>

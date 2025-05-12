@@ -9,6 +9,7 @@ export interface DatepickerProps {
   position?: "relative" | "absolute";
   startDateIcon?: ReactNode;
   endDateIcon?: ReactNode;
+  onChange?: (date: Date) => void;
 }
 
 export const Datepicker = (props: DatepickerProps) => {
@@ -32,6 +33,7 @@ export const Datepicker = (props: DatepickerProps) => {
                 date={new Date(oneUserForm.hire_date)}
                 onDateChange={(date) => {
                   setOneUserForm("hire_date", date);
+                  props.onChange?.(date);
                 }}
               />
               <InputRightElement children={<FaCalendar />} />

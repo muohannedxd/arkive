@@ -12,11 +12,16 @@ import {
   Select,
   InputGroup,
   InputRightElement,
+  Spinner,
+  Alert,
+  AlertIcon,
+  AlertTitle,
 } from "@chakra-ui/react";
 import { Datepicker } from "components/datepicker/Datepicker";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUserStore } from "../stores/users.store";
-import { departments, roles, statuses } from "lib/configData";
+import { roles, statuses } from "lib/configData";
+import useUsers from "../viewmodels/users.viewmodel";
 
 export default function EditUserInfoModal({
   isOpen,
@@ -37,12 +42,51 @@ export default function EditUserInfoModal({
   const { oneUserForm, setOneUserForm, clearOneUserForm } = useUserStore();
 
   /**
+   * Get departments and user operations from viewmodel
+   */
+  const {
+    departments,
+    fetchUserById,
+    updateUser,
+    formLoading,
+    formError,
+    formSuccess,
+    setFormError
+  } = useUsers();
+
+  /**
+   * Fetch user data when modal opens
+   */
+  useEffect(() => {
+    if (isOpen && userId) {
+      fetchUserById(userId);
+    }
+  }, [fetchUserById, isOpen, userId]);
+
+  /**
+   * Handle date change
+   */
+  const handleDateChange = (date: Date) => {
+    setOneUserForm("hire_date", date);
+  };
+
+  /**
    * Submission
    */
-  const handleSubmit = () => {
-    console.log(oneUserForm);
-    clearOneUserForm();
-    onClose();
+  const handleSubmit = async () => {
+    // Basic validation
+    if (!oneUserForm.name || !oneUserForm.email) {
+      setFormError("Name and email are required");
+      return;
+    }
+
+    const success = await updateUser(userId);
+    if (success) {
+      setTimeout(() => {
+        clearOneUserForm();
+        onClose();
+      }, 1500);
+    }
   };
 
   return (
@@ -53,6 +97,20 @@ export default function EditUserInfoModal({
         <ModalCloseButton />
         <ModalBody className="z-10">
           <div className="z-10 flex flex-col gap-4">
+            {formError && (
+              <Alert status="error" borderRadius="lg" mb={3}>
+                <AlertIcon />
+                <AlertTitle>{formError}</AlertTitle>
+              </Alert>
+            )}
+
+            {formSuccess && (
+              <Alert status="success" borderRadius="lg" mb={3}>
+                <AlertIcon />
+                <AlertTitle>{formSuccess}</AlertTitle>
+              </Alert>
+            )}
+
             <div>
               <FormControl id="full-name" isRequired>
                 <FormLabel>Full name</FormLabel>
@@ -85,15 +143,15 @@ export default function EditUserInfoModal({
               </FormControl>
             </div>
             <div>
-              <FormControl id="password" isRequired>
-                <FormLabel>Password</FormLabel>
+              <FormControl id="password">
+                <FormLabel>Password (leave empty to keep current)</FormLabel>
                 <InputGroup size="md">
                   <Input
                     value={oneUserForm.password}
                     onChange={(e) => setOneUserForm("password", e.target.value)}
                     pr="4.5rem"
                     type={show ? "text" : "password"}
-                    placeholder="Enter password"
+                    placeholder="Enter new password"
                     borderRadius="lg"
                   />
                   <InputRightElement width="4.5rem" borderRadius="lg">
@@ -133,8 +191,10 @@ export default function EditUserInfoModal({
                   placeholder="Select department"
                   borderRadius="lg"
                 >
-                  {departments.map((department) => (
-                    <option key={department}>{department}</option>
+                  {departments.map((dept) => (
+                    <option key={dept.id} value={dept.name}>
+                      {dept.name}
+                    </option>
                   ))}
                 </Select>
               </FormControl>
@@ -151,7 +211,10 @@ export default function EditUserInfoModal({
             <div>
               <FormControl id="hire-date" isRequired>
                 <FormLabel>Hire Date</FormLabel>
-                <Datepicker position="relative" />
+                <Datepicker 
+                  position="relative" 
+                  onChange={handleDateChange}
+                />
               </FormControl>
             </div>
             <div>
@@ -173,9 +236,11 @@ export default function EditUserInfoModal({
               <Button
                 onClick={handleSubmit}
                 variant={"brand"}
+                isLoading={formLoading}
+                disabled={formLoading}
                 className="w-full bg-mainbrand text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-800"
               >
-                Edit the User
+                {formLoading ? <Spinner size="sm" /> : "Update User"}
               </Button>
             </div>
           </div>

@@ -9,8 +9,18 @@ export default function useUsers() {
   /**
    * Users display and search and filter
    */
-  const { usersData, pageIndex, countPerPage, setUsersData, setTotalUsers, userSearchKey, userFilters } =
-    useUserStore();
+  const { 
+    usersData, 
+    pageIndex, 
+    countPerPage, 
+    setUsersData, 
+    setTotalUsers, 
+    userSearchKey, 
+    userFilters,
+    oneUserForm,
+    setOneUserForm,
+    clearOneUserForm
+  } = useUserStore();
 
   const [sorting, setSorting] = useState<SortingState>([]);
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
@@ -18,10 +28,43 @@ export default function useUsers() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
 
+  // Default departments in case API fails
+  const defaultDepartments = [
+    { id: 1, name: "Information Technology" },
+    { id: 2, name: "Marketing" },
+    { id: 3, name: "Human Resources" },
+    { id: 4, name: "Finance" },
+    { id: 5, name: "Operations" }
+  ];
+  
+  const [departments, setDepartments] = useState<{ id: number, name: string }[]>(defaultDepartments);
+  const [formLoading, setFormLoading] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [formSuccess, setFormSuccess] = useState("");
+
+  // Fetch departments from API
+  const fetchDepartments = useCallback(async () => {
+    try {
+      const response = await axiosClient.get("/departments");
+      // Check if the response has the expected shape
+      const deptData = response.data?.data || response.data;
+      if (Array.isArray(deptData) && deptData.length > 0) {
+        setDepartments(deptData);
+      }
+    } catch (error) {
+      console.error("Failed to fetch departments:", error);
+      // Keep using default departments if API fails
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDepartments();
+  }, [fetchDepartments]);
+
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await axiosClient.get("./users", {
+      const response = await axiosClient.get("/users", {
         params: {
           page: pageIndex + 1,
           per_page: countPerPage,
@@ -30,7 +73,6 @@ export default function useUsers() {
         },
       });
       
-  
       const transformedData: UserRowObj[] = response.data.data.map((user: UserObject) => ({
         personal: [user.name, user.email, user.id],
         phone: user.phone,
@@ -78,6 +120,188 @@ export default function useUsers() {
       setSelectedUsers(userIdsOnCurrentPage);
     }
     setIsAllSelected(!isAllSelected);
+  };
+
+  /**
+   * Create user
+   */
+  const createUser = async () => {
+    setFormLoading(true);
+    setFormError("");
+    setFormSuccess("");
+    
+    try {
+      // Find the department id based on the department name
+      const selectedDepartmentName = oneUserForm.department;
+      const selectedDepartment = departments.find(dept => dept.name === selectedDepartmentName);
+      
+      // Format the user data for the API
+      const userData = {
+        ...oneUserForm,
+        // Map department name to department_id for API request
+        department_id: selectedDepartment ? selectedDepartment.id : null,
+        // Make sure hire_date is in ISO format string 
+        hire_date: oneUserForm.hire_date instanceof Date 
+          ? oneUserForm.hire_date.toISOString().split('T')[0] 
+          : oneUserForm.hire_date
+      };
+      
+      console.log("Sending user data:", userData);
+      
+      const response = await axiosClient.post("/users", userData);
+      console.log("API response:", response.data);
+      
+      if (response.data.status === "error") {
+        // If the API returns an error status, show the error message
+        setFormError(response.data.message || "Failed to create user");
+        return false;
+      }
+      
+      setFormSuccess("User created successfully!");
+      clearOneUserForm();
+      await fetchUsers();
+      return true;
+    } catch (error: any) {
+      console.error("Failed to create user:", error);
+      // More detailed error logging and error message extraction
+      if (error.response) {
+        console.error("Response data:", error.response.data);
+        console.error("Response status:", error.response.status);
+        
+        // Extract the error message from the response
+        const errorMessage = error.response.data?.message || 
+                            (error.response.data?.status === "error" && error.response.data?.data) || 
+                            "Failed to create user";
+        setFormError(errorMessage);
+      } else {
+        setFormError("Failed to connect to the server");
+      }
+      return false;
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  /**
+   * Get user for editing
+   */
+  const fetchUserById = async (userId: number) => {
+    setFormLoading(true);
+    try {
+      const response = await axiosClient.get(`/users/${userId}`);
+      const userData = response.data.data;
+      
+      // Update all fields in the form
+      Object.keys(userData).forEach((key) => {
+        if (key in oneUserForm) {
+          setOneUserForm(key as keyof UserObject, userData[key]);
+        }
+      });
+    } catch (error) {
+      console.error("Failed to fetch user:", error);
+      setFormError("Failed to load user data");
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  /**
+   * Update user
+   */
+  const updateUser = async (userId: number) => {
+    setFormLoading(true);
+    setFormError("");
+    setFormSuccess("");
+    
+    try {
+      // Format the user data for the API
+      const userData = {
+        ...oneUserForm,
+        // Make sure hire_date is in ISO format string 
+        hire_date: oneUserForm.hire_date instanceof Date 
+          ? oneUserForm.hire_date.toISOString().split('T')[0] 
+          : oneUserForm.hire_date
+      };
+      
+      console.log("Updating user data:", userData);
+      
+      const response = await axiosClient.put(`/users/${userId}`, userData);
+      console.log("API response:", response.data);
+      
+      if (response.data.status === "error") {
+        // If the API returns an error status, show the error message
+        setFormError(response.data.message || "Failed to update user");
+        return false;
+      }
+      
+      setFormSuccess("User updated successfully!");
+      await fetchUsers();
+      return true;
+    } catch (error: any) {
+      console.error("Failed to update user:", error);
+      // More detailed error logging and error message extraction
+      if (error.response) {
+        console.error("Response data:", error.response.data);
+        console.error("Response status:", error.response.status);
+        
+        // Extract the error message from the response
+        const errorMessage = error.response.data?.message || 
+                            (error.response.data?.status === "error" && error.response.data?.data) || 
+                            "Failed to update user";
+        setFormError(errorMessage);
+      } else {
+        setFormError("Failed to connect to the server");
+      }
+      return false;
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  /**
+   * Delete user
+   */
+  const deleteUser = async (userId: number) => {
+    setFormLoading(true);
+    setFormError("");
+    setFormSuccess("");
+    
+    try {
+      await axiosClient.delete(`/users/${userId}`);
+      setFormSuccess("User deleted successfully!");
+      await fetchUsers();
+      return true;
+    } catch (error: any) {
+      console.error("Failed to delete user:", error);
+      setFormError(error.response?.data?.message || "Failed to delete user");
+      return false;
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  /**
+   * Delete multiple users
+   */
+  const deleteSelectedUsers = async (userIds: number[]) => {
+    setFormLoading(true);
+    setFormError("");
+    setFormSuccess("");
+    
+    try {
+      // Using Promise.all to delete multiple users in parallel
+      await Promise.all(userIds.map(id => axiosClient.delete(`/users/${id}`)));
+      setFormSuccess("Selected users deleted successfully!");
+      setSelectedUsers([]);
+      await fetchUsers();
+      return true;
+    } catch (error: any) {
+      console.error("Failed to delete users:", error);
+      setFormError(error.response?.data?.message || "Failed to delete users");
+      return false;
+    } finally {
+      setFormLoading(false);
+    }
   };
 
   /**
@@ -167,6 +391,7 @@ export default function useUsers() {
     isOpenEditUserInfoModal,
     onOpenEditUserInfoModal,
     onCloseEditUserInfoModal,
+    fetchUserById,
     // delete user
     isOpenDeleteUserModal,
     onOpenDeleteUserModal,
@@ -175,5 +400,16 @@ export default function useUsers() {
     isOpenDeleteSelectedUsersModal,
     onOpenDeleteSelectedUsersModal,
     onCloseDeleteSelectedUsersModal,
+    // CRUD operations
+    createUser,
+    updateUser,
+    deleteUser,
+    deleteSelectedUsers,
+    departments,
+    formLoading,
+    formError,
+    formSuccess,
+    setFormError,
+    setFormSuccess
   };
 }
