@@ -11,6 +11,7 @@ import {
   AlertTitle,
   Spinner,
 } from "@chakra-ui/react";
+import { useEffect } from "react";
 import useUsers from "../viewmodels/users.viewmodel";
 
 export default function DeleteUserModal({
@@ -22,7 +23,17 @@ export default function DeleteUserModal({
   onClose: () => void;
   userId: number;
 }) {
-  const { deleteUser, formLoading, formError, formSuccess } = useUsers();
+  const { deleteUser, formLoading, formError, formSuccess, setFormSuccess, setFormError } = useUsers();
+
+  /**
+   * Reset form state when the modal is opened
+   */
+  useEffect(() => {
+    if (isOpen) {
+      setFormSuccess("");
+      setFormError("");
+    }
+  }, [isOpen, setFormSuccess, setFormError]);
 
   /**
    * Submission

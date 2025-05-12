@@ -11,6 +11,7 @@ import {
   AlertTitle,
   Spinner,
 } from "@chakra-ui/react";
+import { useEffect } from "react";
 import useUsers from "../viewmodels/users.viewmodel";
 
 export default function DeleteSelectedUsersModal({
@@ -22,7 +23,25 @@ export default function DeleteSelectedUsersModal({
   onClose: () => void;
   selectedUsers: number[];
 }) {
-  const { deleteSelectedUsers, formLoading, formError, formSuccess } = useUsers();
+  const { 
+    deleteSelectedUsers, 
+    formLoading, 
+    formError, 
+    formSuccess, 
+    setFormSuccess, 
+    setFormError,
+    setSelectedUsers 
+  } = useUsers();
+
+  /**
+   * Reset form state when the modal is opened
+   */
+  useEffect(() => {
+    if (isOpen) {
+      setFormSuccess("");
+      setFormError("");
+    }
+  }, [isOpen, setFormSuccess, setFormError]);
 
   /**
    * Submission
@@ -30,6 +49,8 @@ export default function DeleteSelectedUsersModal({
   const handleSubmit = async () => {
     const success = await deleteSelectedUsers(selectedUsers);
     if (success) {
+      // Explicitly clear selected users to ensure UI is updated
+      setSelectedUsers([]);
       setTimeout(() => {
         onClose();
       }, 1000);
