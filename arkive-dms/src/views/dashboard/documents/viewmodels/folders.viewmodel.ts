@@ -11,6 +11,7 @@ export default function useFolders() {
   // State for create/edit folder form
   const [folderTitle, setFolderTitle] = useState("");
   const [editFolderId, setEditFolderId] = useState<number | null>(null);
+  const [editFolderDepartment, setEditFolderDepartment] = useState<string>("");
 
   // Toast for notifications
   const toast = useToast();
@@ -78,6 +79,7 @@ export default function useFolders() {
   const clearCreateFolderForm = () => {
     setFolderTitle("");
     setEditFolderId(null);
+    setEditFolderDepartment("");
   };
 
   /**
@@ -96,7 +98,7 @@ export default function useFolders() {
     }
     
     // Ensure user has a department before creating folders
-    if (!userDepartment) {
+    if (!userDepartment && !editFolderId) {
       toast({
         title: "Department Required",
         description: "You must be associated with a department to create folders",
@@ -114,7 +116,7 @@ export default function useFolders() {
         // Update existing folder
         await axiosClient.put(`/folders/${editFolderId}`, {
           title: folderTitle.trim(),
-          department: userDepartment // Include department but backend ignores it during update
+          department: editFolderDepartment || userDepartment
         });
         
         toast({
@@ -205,6 +207,7 @@ export default function useFolders() {
   const startEditFolder = (folder: FolderObject) => {
     setFolderTitle(folder.title);
     setEditFolderId(folder.id);
+    setEditFolderDepartment(folder.department);
     onOpenEditFolderModal();
   };
 
@@ -267,6 +270,7 @@ export default function useFolders() {
     clearCreateFolderForm,
     handleSubmit,
     editFolderId,
+    editFolderDepartment,
     
     // Navigation
     currentFolderId,

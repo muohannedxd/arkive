@@ -4,6 +4,7 @@ import {
   IconButton,
   MenuList,
   MenuItem,
+  Tooltip,
 } from "@chakra-ui/react";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { FaFolder } from "react-icons/fa";
@@ -22,7 +23,7 @@ interface FolderInterface {
 }
 
 export default function Folder(props: FolderInterface) {
-  const { id, title, createdAt, onNavigate, onEdit, onDelete, formatDate } = props;
+  const { id, title, department, createdAt, onNavigate, onEdit, onDelete, formatDate } = props;
 
   // Handle double click to navigate into folder
   const handleDoubleClick = () => {
@@ -42,7 +43,7 @@ export default function Folder(props: FolderInterface) {
   };
 
   return (
-    <div 
+    <div
       className="group flex cursor-pointer items-center gap-4 rounded-lg border-2 border-gray-200 bg-white px-4 py-2 transition-all duration-200 hover:bg-gray-50 sm:max-w-80"
       onDoubleClick={handleDoubleClick}
     >
@@ -54,12 +55,14 @@ export default function Folder(props: FolderInterface) {
         >
           {title}
         </h5>
-        <p
-          className="truncate text-sm font-normal text-gray-600 max-w-44"
-          title={`Created ${formatDate(createdAt)}`}
-        >
-          Created {formatDate(createdAt)}
-        </p>
+        <div className="flex flex-col gap-0">
+          <p
+            className="truncate text-sm font-normal text-gray-600 max-w-44"
+            title={`Created ${formatDate(createdAt)}`}
+          >
+            Created {formatDate(createdAt)}
+          </p>
+        </div>
       </div>
       <div className="ml-auto">
         <Menu>

@@ -39,6 +39,7 @@ export default function Documents() {
     onCloseDeleteFolderModal,
     handleConfirmDelete,
     userDepartment,
+    editFolderDepartment,
   } = useFolders();
 
   // Document hooks
@@ -222,6 +223,7 @@ export default function Documents() {
         setFolderTitle={setFolderTitle}
         handleSubmit={handleSubmit}
         isLoading={foldersLoading}
+        department={editFolderDepartment}
       />
       
       <DeleteFolderModal

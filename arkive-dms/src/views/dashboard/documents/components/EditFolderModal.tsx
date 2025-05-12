@@ -9,6 +9,7 @@ import {
   FormControl,
   FormLabel,
   Input,
+  Text,
 } from "@chakra-ui/react";
 
 interface EditFolderModalProps {
@@ -18,6 +19,7 @@ interface EditFolderModalProps {
   setFolderTitle: (title: string) => void;
   handleSubmit: () => void;
   isLoading: boolean;
+  department?: string;
 }
 
 export default function EditFolderModal({
@@ -27,6 +29,7 @@ export default function EditFolderModal({
   setFolderTitle,
   handleSubmit,
   isLoading,
+  department,
 }: EditFolderModalProps) {
   const handleSave = () => {
     handleSubmit();
@@ -41,6 +44,12 @@ export default function EditFolderModal({
         <ModalCloseButton />
         <ModalBody className="z-10">
           <div className="z-10 flex flex-col gap-4">
+            {department && (
+              <div>
+                <Text className="font-semibold mb-1">Department</Text>
+                <Text className="text-sm text-gray-600">{department}</Text>
+              </div>
+            )}
             <div>
               <FormControl id="folder-title" isRequired>
                 <FormLabel>Folder Title</FormLabel>
