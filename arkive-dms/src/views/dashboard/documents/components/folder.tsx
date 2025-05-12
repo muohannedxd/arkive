@@ -4,7 +4,6 @@ import {
   IconButton,
   MenuList,
   MenuItem,
-  Tooltip,
 } from "@chakra-ui/react";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { FaFolder } from "react-icons/fa";
@@ -23,7 +22,7 @@ interface FolderInterface {
 }
 
 export default function Folder(props: FolderInterface) {
-  const { id, title, department, createdAt, onNavigate, onEdit, onDelete, formatDate } = props;
+  const { id, title, createdAt, onNavigate, onEdit, onDelete, formatDate } = props;
 
   // Handle double click to navigate into folder
   const handleDoubleClick = () => {
