@@ -1,8 +1,9 @@
 import Folder from "./components/folder";
 import FileCard from "./components/fileCard";
-import { Button, Spinner } from "@chakra-ui/react";
+import { Button, Spinner, Text } from "@chakra-ui/react";
 import { TiFolderAdd } from "react-icons/ti";
 import { RiFileAddLine } from "react-icons/ri";
+import { BsSortDownAlt } from "react-icons/bs";
 import CreateFolderModal from "./components/CreateFolderModal";
 import EditFolderModal from "./components/EditFolderModal";
 import DeleteFolderModal from "./components/DeleteFolderModal";
@@ -11,11 +12,9 @@ import FolderContent from "./components/FolderContent";
 import useFolders from "./viewmodels/folders.viewmodel";
 import useDocument from "./viewmodels/document.viewmodel";
 import { useDocumentStore } from "./stores/document.store";
-import { useAuthStore } from "views/auth/stores/auth.store";
 
 export default function Documents() {
-  // Get user information
-  const { user } = useAuthStore();
+
   
   // Folder hooks
   const {
@@ -74,12 +73,18 @@ export default function Documents() {
           <>
             {/* Folders */}
             <div className="mb-5 mt-5 flex items-center justify-between">
-              <h4 className="text-2xl font-bold text-navy-700">
-                {canCreateFolder ? 
-                  `Folders (${userDepartment} Department)` : 
-                  'Folders'
-                }
-              </h4>
+              <div>
+                <h4 className="text-2xl font-bold text-navy-700">
+                  {canCreateFolder ? 
+                    `Folders (${userDepartment} Department)` : 
+                    'Folders'
+                  }
+                </h4>
+                <div className="flex items-center text-sm text-gray-600 mt-1">
+                  <BsSortDownAlt className="mr-1" />
+                  <Text>Sorted by newest creation date</Text>
+                </div>
+              </div>
               <Button
                 onClick={onOpenCreateFolderModal}
                 leftIcon={<TiFolderAdd />}
