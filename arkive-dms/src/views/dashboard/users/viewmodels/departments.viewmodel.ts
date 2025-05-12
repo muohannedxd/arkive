@@ -8,7 +8,7 @@ export interface Department {
 }
 
 export default function useDepartments() {
-  // Default departments in case API fails
+  // default departments in case API fails
   const defaultDepartments: Department[] = [
     { id: 1, name: "Information Technology" },
     { id: 2, name: "Marketing" },
@@ -37,7 +37,6 @@ export default function useDepartments() {
     setError(null);
     try {
       const response = await axiosClient.get("/departments");
-      // check if the response has the expected shape
       const deptData = response.data?.data || response.data;
       if (Array.isArray(deptData) && deptData.length > 0) {
         setDepartments(deptData);
@@ -71,13 +70,11 @@ export default function useDepartments() {
         name: newDepartmentName.trim(),
       });
 
-      // Check if the response indicates an error
       if (response.data.error) {
         setError(response.data.error);
         return;
       }
 
-      // Add the new department to the list
       if (response.data) {
         const newDept = response.data.data || response.data;
         setDepartments((prevDepts) => [...prevDepts, newDept]);
@@ -86,7 +83,6 @@ export default function useDepartments() {
       }
     } catch (error: any) {
       console.error("Failed to add department:", error);
-      // Handle different error response formats
       const errorMessage = 
         error.response?.data?.error || 
         error.response?.data?.message || 
@@ -97,7 +93,7 @@ export default function useDepartments() {
     }
   };
 
-  // Delete a department
+  // delete a department
   const deleteDepartment = async (departmentId: number) => {
     setIsLoading(true);
     setError(null);
@@ -106,7 +102,6 @@ export default function useDepartments() {
     try {
       await axiosClient.delete(`/departments/${departmentId}`);
 
-      // Remove the deleted department from the list
       setDepartments((prevDepts) =>
         prevDepts.filter((dept) => dept.id !== departmentId)
       );

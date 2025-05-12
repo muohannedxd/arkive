@@ -8,7 +8,7 @@ import useDepartments from "./departments.viewmodel";
 
 export default function useUsers() {
   /**
-   * Users display and search and filter
+   * users display and search and filter
    */
   const { 
     usersData, 
@@ -23,7 +23,7 @@ export default function useUsers() {
     clearOneUserForm
   } = useUserStore();
 
-  // Get departments from the departments viewmodel
+  // get departments from the departments viewmodel
   const { departments } = useDepartments();
 
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -78,7 +78,7 @@ export default function useUsers() {
   };
 
   /**
-   * Users select
+   * users select
    */
   const handleUserSelect = (id: number) => {
     setSelectedUsers((prev) =>
@@ -98,7 +98,7 @@ export default function useUsers() {
   };
 
   /**
-   * Create user
+   * create user
    */
   const createUser = async () => {
     setFormLoading(true);
@@ -106,16 +106,12 @@ export default function useUsers() {
     setFormSuccess("");
     
     try {
-      // Find the department id based on the department name
       const selectedDepartmentName = oneUserForm.department;
       const selectedDepartment = departments.find(dept => dept.name === selectedDepartmentName);
       
-      // Format the user data for the API
       const userData = {
         ...oneUserForm,
-        // Map department name to department_id for API request
         department_id: selectedDepartment ? selectedDepartment.id : null,
-        // Make sure hire_date is in ISO format string 
         hire_date: oneUserForm.hire_date instanceof Date 
           ? oneUserForm.hire_date.toISOString().split('T')[0] 
           : oneUserForm.hire_date
@@ -127,7 +123,6 @@ export default function useUsers() {
       console.log("API response:", response.data);
       
       if (response.data.status === "error") {
-        // If the API returns an error status, show the error message
         setFormError(response.data.message || "Failed to create user");
         return false;
       }
@@ -138,12 +133,10 @@ export default function useUsers() {
       return true;
     } catch (error: any) {
       console.error("Failed to create user:", error);
-      // More detailed error logging and error message extraction
       if (error.response) {
         console.error("Response data:", error.response.data);
         console.error("Response status:", error.response.status);
         
-        // Extract the error message from the response
         const errorMessage = error.response.data?.message || 
                             (error.response.data?.status === "error" && error.response.data?.data) || 
                             "Failed to create user";
@@ -158,7 +151,7 @@ export default function useUsers() {
   };
 
   /**
-   * Get user for editing
+   * get user for editing
    */
   const fetchUserById = async (userId: number) => {
     setFormLoading(true);
@@ -181,7 +174,7 @@ export default function useUsers() {
   };
 
   /**
-   * Update user
+   * update user
    */
   const updateUser = async (userId: number) => {
     setFormLoading(true);
@@ -189,10 +182,8 @@ export default function useUsers() {
     setFormSuccess("");
     
     try {
-      // Format the user data for the API
       const userData = {
         ...oneUserForm,
-        // Make sure hire_date is in ISO format string 
         hire_date: oneUserForm.hire_date instanceof Date 
           ? oneUserForm.hire_date.toISOString().split('T')[0] 
           : oneUserForm.hire_date
@@ -204,7 +195,6 @@ export default function useUsers() {
       console.log("API response:", response.data);
       
       if (response.data.status === "error") {
-        // If the API returns an error status, show the error message
         setFormError(response.data.message || "Failed to update user");
         return false;
       }
@@ -214,12 +204,10 @@ export default function useUsers() {
       return true;
     } catch (error: any) {
       console.error("Failed to update user:", error);
-      // More detailed error logging and error message extraction
       if (error.response) {
         console.error("Response data:", error.response.data);
         console.error("Response status:", error.response.status);
         
-        // Extract the error message from the response
         const errorMessage = error.response.data?.message || 
                             (error.response.data?.status === "error" && error.response.data?.data) || 
                             "Failed to update user";
@@ -234,7 +222,7 @@ export default function useUsers() {
   };
 
   /**
-   * Delete user
+   * delete user
    */
   const deleteUser = async (userId: number) => {
     setFormLoading(true);
@@ -256,7 +244,7 @@ export default function useUsers() {
   };
 
   /**
-   * Delete multiple users
+   * delete multiple users
    */
   const deleteSelectedUsers = async (userIds: number[]) => {
     setFormLoading(true);
@@ -264,10 +252,9 @@ export default function useUsers() {
     setFormSuccess("");
     
     try {
-      // Using Promise.all to delete multiple users in parallel
+      // using Promise.all to delete multiple users in parallel
       await Promise.all(userIds.map(id => axiosClient.delete(`/users/${id}`)));
       
-      // Clear selection after successful deletion
       setSelectedUsers([]);
       setIsAllSelected(false);
       
@@ -284,7 +271,7 @@ export default function useUsers() {
   };
 
   /**
-   * Users adding: add one user
+   * users adding: add one user
    */
   const {
     isOpen: isOpenOneUserModal,
@@ -293,7 +280,7 @@ export default function useUsers() {
   } = useDisclosure();
 
   /**
-   * Users adding: add many users
+   * users adding: add many users
    */
   const {
     isOpen: isOpenManyUserModal,
@@ -302,7 +289,7 @@ export default function useUsers() {
   } = useDisclosure();
 
   /**
-   * Request document
+   * request document
    */
   const [menuSelectedUserId, setMenumenuSelectedUserId] = useState<
     number | null
@@ -315,7 +302,7 @@ export default function useUsers() {
   } = useDisclosure();
 
   /**
-   * Edit user info
+   * edit user info
    */
   const {
     isOpen: isOpenEditUserInfoModal,
@@ -324,7 +311,7 @@ export default function useUsers() {
   } = useDisclosure();
 
   /**
-   * Delete user
+   * delete user
    */
   const {
     isOpen: isOpenDeleteUserModal,
@@ -333,7 +320,7 @@ export default function useUsers() {
   } = useDisclosure();
 
   /**
-   * Delete selected users
+   * delete selected users
    */
   const {
     isOpen: isOpenDeleteSelectedUsersModal,

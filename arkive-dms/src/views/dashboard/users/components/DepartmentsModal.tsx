@@ -45,11 +45,11 @@ export default function DepartmentsModal({
     deleteDepartment,
   } = useDepartments();
 
-  // Refresh departments when modal opens and clear messages
+  // refresh departments when modal opens and clear messages
   useEffect(() => {
     if (isOpen) {
       fetchDepartments();
-      // Clear any previous success/error messages when opening the modal
+      // clear any previous success/error messages when opening the modal
       setError(null);
       setSuccess(null);
     }
@@ -63,7 +63,7 @@ export default function DepartmentsModal({
     await deleteDepartment(id);
   };
 
-  // Custom close handler to clear messages
+  // custom close handler to clear messages
   const handleClose = () => {
     setError(null);
     setSuccess(null);
