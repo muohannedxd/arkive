@@ -18,11 +18,13 @@ import { FiEdit3, FiFile } from "react-icons/fi";
 import PaginationTable from "./components/PaginationTable";
 import { FaArrowDown, FaArrowUp } from "react-icons/fa";
 import useUsers from "./viewmodels/users.viewmodel";
+import useDepartments from "./viewmodels/departments.viewmodel";
 import AddOneUserModal from "./components/AddOneUserModal";
 import AddManyUserModal from "./components/AddManyUsersModal";
 import RequestDocumentModal from "./components/RequestDocumentModal";
 import EditUserInfoModal from "./components/EditUserInfoModal";
 import DeleteUserModal from "./components/DeleteUserModal";
+import DepartmentsModal from "./components/DepartmentsModal";
 import { UserRowObj } from "types/user";
 import { useUserStore } from "./stores/users.store";
 import DeleteSelectedUsersModal from "./components/DeleteSelectedUsersModal";
@@ -62,6 +64,13 @@ export default function Users() {
     onOpenDeleteSelectedUsersModal,
     onCloseDeleteSelectedUsersModal,
   } = useUsers();
+
+  // Add departments modal controls
+  const { 
+    isOpenDepartmentsModal, 
+    onOpenDepartmentsModal, 
+    onCloseDepartmentsModal 
+  } = useDepartments();
 
   const columns = [
     columnHelper.accessor("personal", {
@@ -118,8 +127,8 @@ export default function Users() {
               info.getValue().toString().toLowerCase() === "admin"
                 ? "purple"
                 : info.getValue().toLowerCase() === "user"
-                ? "teal"
-                : ""
+                  ? "teal"
+                  : ""
             }
           >
             <p className="text-sm md:text-base">{info.getValue()}</p>
@@ -159,8 +168,8 @@ export default function Users() {
               info.getValue().toString().toLowerCase() === "active"
                 ? "green"
                 : info.getValue().toString().toLowerCase() === "inactive"
-                ? "red"
-                : "orange"
+                  ? "red"
+                  : "orange"
             }
           >
             <p className="text-sm md:text-base"> {info.getValue()} </p>
@@ -277,22 +286,32 @@ export default function Users() {
             <div className="text-xl font-bold text-navy-700">
               Total Number of Users: {totalUsers}
             </div>
-            <Menu>
-              <MenuButton className="rounded-md bg-mainbrand py-2 pl-3 pr-4 text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-800">
-                <button className="linear flex items-center gap-2">
-                  <MdArrowDropDown />
-                  <p>Add Users</p>
-                </button>
-              </MenuButton>
-              <MenuList>
-                <MenuItem onClick={onOpenOneUserModal} icon={<MdAdd />}>
-                  Add one user
-                </MenuItem>
-                <MenuItem onClick={onOpenManyUserModal} icon={<FiFile />}>
-                  Load users from a file
-                </MenuItem>
-              </MenuList>
-            </Menu>
+            <div className="flex justify-center items-center gap-3">
+              <Button
+                onClick={onOpenDepartmentsModal}
+                leftIcon={<MdAdd />}
+                variant={"brand"}
+                className="bg-mainbrand text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-800"
+              >
+                Add a Department
+              </Button>
+              <Menu>
+                <MenuButton className="rounded-md bg-mainbrand py-2 pl-3 pr-4 text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-800">
+                  <button className="linear flex items-center gap-2">
+                    <MdArrowDropDown />
+                    <p>Add Users</p>
+                  </button>
+                </MenuButton>
+                <MenuList>
+                  <MenuItem onClick={onOpenOneUserModal} icon={<MdAdd />}>
+                    Add one user
+                  </MenuItem>
+                  <MenuItem onClick={onOpenManyUserModal} icon={<FiFile />}>
+                    Load users from a file
+                  </MenuItem>
+                </MenuList>
+              </Menu>
+            </div>
           </header>
 
           {/* Modals */}
@@ -323,6 +342,10 @@ export default function Users() {
             isOpen={isOpenDeleteSelectedUsersModal}
             onClose={onCloseDeleteSelectedUsersModal}
             selectedUsers={selectedUsers}
+          />
+          <DepartmentsModal
+            isOpen={isOpenDepartmentsModal}
+            onClose={onCloseDepartmentsModal}
           />
 
           <div className="mt-2 flex items-center gap-2">
@@ -391,9 +414,8 @@ export default function Users() {
                         return (
                           <td
                             key={cell.id}
-                            className={`min-w-[150px] py-3 pr-4 ${
-                              isLastCell ? "text-right" : ""
-                            }`}
+                            className={`min-w-[150px] py-3 pr-4 ${isLastCell ? "text-right" : ""
+                              }`}
                           >
                             {flexRender(
                               cell.column.columnDef.cell,

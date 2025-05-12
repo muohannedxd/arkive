@@ -4,6 +4,7 @@ import { useDisclosure } from "@chakra-ui/react";
 import axiosClient from "lib/axios";
 import { UserRowObj, UserObject } from "types/user";
 import { useUserStore } from "../stores/users.store";
+import useDepartments from "./departments.viewmodel";
 
 export default function useUsers() {
   /**
@@ -22,44 +23,18 @@ export default function useUsers() {
     clearOneUserForm
   } = useUserStore();
 
+  // Get departments from the departments viewmodel
+  const { departments } = useDepartments();
+
   const [sorting, setSorting] = useState<SortingState>([]);
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
-
-  // Default departments in case API fails
-  const defaultDepartments = [
-    { id: 1, name: "Information Technology" },
-    { id: 2, name: "Marketing" },
-    { id: 3, name: "Human Resources" },
-    { id: 4, name: "Finance" },
-    { id: 5, name: "Operations" }
-  ];
   
-  const [departments, setDepartments] = useState<{ id: number, name: string }[]>(defaultDepartments);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState("");
-
-  // Fetch departments from API
-  const fetchDepartments = useCallback(async () => {
-    try {
-      const response = await axiosClient.get("/departments");
-      // Check if the response has the expected shape
-      const deptData = response.data?.data || response.data;
-      if (Array.isArray(deptData) && deptData.length > 0) {
-        setDepartments(deptData);
-      }
-    } catch (error) {
-      console.error("Failed to fetch departments:", error);
-      // Keep using default departments if API fails
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchDepartments();
-  }, [fetchDepartments]);
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
