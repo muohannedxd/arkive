@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { FiDownload, FiX, FiZoomIn, FiZoomOut } from "react-icons/fi";
+import { BiError } from "react-icons/bi";
 import DocViewer, { DocViewerRenderers } from "react-doc-viewer";
 import * as XLSX from "xlsx";
 import "react-pdf/dist/Page/AnnotationLayer.css";
@@ -26,11 +27,14 @@ export default function DocumentViewer({
   const [, setNumPages] = useState<number | null>(null);
   const [scale, setScale] = useState(1.0);
   const [fileContent, setFileContent] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<boolean>(false);
 
   useEffect(() => {
     if (isOpen) {
       setVisible(true);
       setTimeout(() => setAnimate(true), 10);
+      // Reset error state when opening a new file
+      setLoadError(false);
     } else {
       setAnimate(false);
       setTimeout(() => setVisible(false), 300);
@@ -38,36 +42,55 @@ export default function DocumentViewer({
   }, [isOpen]);
 
   const fileType = useMemo(() => {
-    const ext = fileUrl.toString().split(".").pop()?.toLowerCase();
+    const ext = title.toString().split(".").pop()?.toLowerCase() || 
+               fileUrl.toString().split(".").pop()?.toLowerCase();
     return ext || "";
-  }, [fileUrl]);
+  }, [fileUrl, title]);
 
   useEffect(() => {
     if (fileType === "txt" || fileType === "json") {
       fetch(fileUrl)
-        .then((res) => res.text())
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error(`HTTP error! Status: ${res.status}`);
+          }
+          return res.text();
+        })
         .then((text) => {
           setFileContent(
             fileType === "json"
               ? JSON.stringify(JSON.parse(text), null, 2)
               : text
           );
+          setLoadError(false);
         })
-        .catch(() => setFileContent("Error loading file."));
+        .catch(() => {
+          setFileContent("Error loading file.");
+          setLoadError(true);
+        });
     }
   }, [fileUrl, fileType]);
 
   useEffect(() => {
     if (["xls", "xlsx", "csv"].includes(fileType)) {
       fetch(fileUrl)
-        .then((res) => res.arrayBuffer())
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error(`HTTP error! Status: ${res.status}`);
+          }
+          return res.arrayBuffer();
+        })
         .then((buffer) => {
           const workbook = XLSX.read(buffer, { type: "array" });
           const sheetName = workbook.SheetNames[0];
           const sheet = workbook.Sheets[sheetName];
           setFileContent(XLSX.utils.sheet_to_csv(sheet));
+          setLoadError(false);
         })
-        .catch(() => setFileContent("Error loading spreadsheet."));
+        .catch(() => {
+          setFileContent("Error loading spreadsheet.");
+          setLoadError(true);
+        });
     }
   }, [fileUrl, fileType]);
 
@@ -81,6 +104,30 @@ export default function DocumentViewer({
   };
 
   if (!visible) return null;
+
+  const renderErrorContent = () => (
+    <div className="flex flex-col items-center justify-center h-[50vh] text-white">
+      <BiError className="text-6xl text-red-500 mb-4" />
+      <h3 className="text-2xl font-bold mb-2">Failed to load document</h3>
+      <p className="text-gray-300 mb-4">The document couldn't be retrieved from storage.</p>
+      <div className="flex gap-2 mt-2">
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
+        >
+          Reload page
+        </button>
+        <a
+          href={fileUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-4 py-2 bg-mainbrand rounded hover:bg-brand-600"
+        >
+          Try direct download
+        </a>
+      </div>
+    </div>
+  );
 
   return (
     <div
@@ -103,7 +150,7 @@ export default function DocumentViewer({
         >
           <FiDownload className="text-white" size={24} />
         </button>
-        {fileType === "pdf" && (
+        {fileType === "pdf" && !loadError && (
           <>
             <button
               onClick={() => setScale(scale + 0.2)}
@@ -128,29 +175,44 @@ export default function DocumentViewer({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mt-12 flex w-full flex-grow justify-center">
-          {fileType === "pdf" ? (
+          {loadError ? (
+            renderErrorContent()
+          ) : fileType === "pdf" ? (
             <Document
               file={fileUrl}
               onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+              onLoadError={() => setLoadError(true)}
+              loading={<div className="text-white text-xl">Loading PDF...</div>}
+              error={<div className="text-red-500 text-xl">Failed to load PDF</div>}
             >
               <Page
                 pageNumber={1}
                 scale={scale}
                 renderTextLayer
                 renderAnnotationLayer
+                error={renderErrorContent}
               />
             </Document>
           ) : fileType.match(/(png|jpg|jpeg|gif|webp|svg)/) ? (
-            <img
-              src={fileUrl}
-              alt={title}
-              className="max-h-full max-w-full object-contain"
-            />
+            <div className="relative">
+              <img
+                src={fileUrl}
+                alt={title}
+                className="max-h-full max-w-full object-contain"
+                onError={() => setLoadError(true)}
+              />
+              {loadError && renderErrorContent()}
+            </div>
           ) : fileType.match(/(doc|docx)/) ? (
             <DocViewer
               className="h-[80vh] w-[80vw]"
               documents={[{ uri: fileUrl }]}
               pluginRenderers={DocViewerRenderers}
+              config={{
+                header: {
+                  disableHeader: true,
+                },
+              }}
             />
           ) : fileType.match(/(xls|xlsx|csv|txt|json)/) ? (
             <pre className="h-[80vh] w-[80vw] overflow-auto bg-gray-800 p-4 text-white">

@@ -12,6 +12,7 @@ import DocumentViewer from "./DocumentViewer";
 import { BsThreeDotsVertical, BsEye } from "react-icons/bs";
 import { FiDownload, FiEdit3, FiLock } from "react-icons/fi";
 import { RiDeleteBin2Line } from "react-icons/ri";
+import { BiError } from "react-icons/bi";
 
 interface FileInterface {
   title: string;
@@ -23,11 +24,36 @@ interface FileInterface {
 export default function FileCard(props: FileInterface) {
   const { title, owner, document, extra } = props;
   const [isOpen, setIsOpen] = useState(false); // Open document viewer
+  const [previewError, setPreviewError] = useState(false);
 
-  // Extract file extension
-  const fileExtension = title.toString().split(".").pop()?.toUpperCase() || "FILE";
-  const isPdf = document.toString().toLowerCase().endsWith(".pdf");
+  // Extract file extension from title
+  const fileExtension = title.split(".").pop()?.toUpperCase() || "FILE";
+  
+  // Build the proper document URL for storage service
+  const getDocumentUrl = (docPath: string): string => {
+    // If already a full URL, use it
+    if (docPath.startsWith('http://') || docPath.startsWith('https://')) {
+      return docPath;
+    }
+    
+    // Check if it's just a filename or a full path
+    const filename = docPath.includes('/') 
+      ? docPath.split('/').pop() 
+      : docPath;
+      
+    // Use gateway port (8003) instead of direct storage service (8085)
+    return `http://localhost:8003/api/storage/download/${filename}`;
+  };
+
+  const documentUrl = getDocumentUrl(document);
+  
+  // Determine file type for preview
+  const isPdf = document.toLowerCase().endsWith(".pdf");
   const isImage = /\.(jpg|jpeg|png|gif|bmp|svg)$/i.test(document);
+
+  const handleImageError = () => {
+    setPreviewError(true);
+  };
 
   return (
     <>
@@ -37,23 +63,32 @@ export default function FileCard(props: FileInterface) {
       >
         <div className="w-full">
           <div className="relative w-full">
-            {/* Handle PDFs and images */}
-            {isImage ? (
+            {/* Handle PDFs and images with error fallback */}
+            {isImage && !previewError ? (
               <img
-                src={document}
-                className="mb-3 max-h-56 w-full rounded-md border-2 border-gray-100 sm:max-h-52 md:max-h-48"
-                alt="file"
+                src={documentUrl}
+                className="mb-3 max-h-56 w-full rounded-md border-2 border-gray-100 sm:max-h-52 md:max-h-48 object-contain"
+                alt={title}
+                onError={handleImageError}
               />
-            ) : isPdf ? (
-              <PdfPreview pdfUrl={document} />
+            ) : isPdf && !previewError ? (
+              <PdfPreview 
+                pdfUrl={documentUrl} 
+                // onError={() => setPreviewError(true)}
+              />
+            ) : previewError ? (
+              // Display error state if preview failed
+              <div className="mb-3 flex h-56 w-full flex-col items-center justify-center rounded-md border-2 border-red-100 bg-red-50 sm:max-h-52 md:max-h-48">
+                <BiError className="text-4xl text-red-500 mb-2" />
+                <p className="text-sm text-red-600 text-center px-4">Preview failed to load</p>
+                <p className="text-xs text-gray-600 mt-1">{fileExtension} file</p>
+              </div>
             ) : (
-              // Display file extension in gray box if no image
+              // Display file extension in gray box if no image/pdf or as fallback
               <div className="mb-3 flex h-56 w-full items-center justify-center rounded-md border-2 border-gray-200 bg-gray-100 text-3xl font-semibold text-gray-600 sm:max-h-52 md:max-h-48">
                 {fileExtension}
               </div>
             )}
-
-            
           </div>
 
           <div className="flex items-center justify-between px-1">
@@ -86,16 +121,22 @@ export default function FileCard(props: FileInterface) {
                   >
                     View File
                   </MenuItem>
-                  <MenuItem onClick={() => {}} icon={<FiDownload />}>
+                  <MenuItem 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(documentUrl, '_blank');
+                    }} 
+                    icon={<FiDownload />}
+                  >
                     Download File
                   </MenuItem>
-                  <MenuItem onClick={() => {}} icon={<FiEdit3 />}>
+                  <MenuItem onClick={(e) => e.stopPropagation()} icon={<FiEdit3 />}>
                     Edit File
                   </MenuItem>
-                  <MenuItem onClick={() => {}} icon={<FiLock />}>
+                  <MenuItem onClick={(e) => e.stopPropagation()} icon={<FiLock />}>
                     Manage Access
                   </MenuItem>
-                  <MenuItem color="red.600" onClick={() => {}} icon={<RiDeleteBin2Line />}>
+                  <MenuItem color="red.600" onClick={(e) => e.stopPropagation()} icon={<RiDeleteBin2Line />}>
                     Delete File
                   </MenuItem>
                 </MenuList>
@@ -105,8 +146,13 @@ export default function FileCard(props: FileInterface) {
         </div>
       </Card>
 
-      {/* Google Drive-Style Fullscreen Viewer */}
-      <DocumentViewer isOpen={isOpen} onClose={() => setIsOpen(false)} fileUrl={document} title={title} />
+      {/* Google Drive-Style Fullscreen Viewer with proper document URL */}
+      <DocumentViewer 
+        isOpen={isOpen} 
+        onClose={() => setIsOpen(false)} 
+        fileUrl={documentUrl} 
+        title={title} 
+      />
     </>
   );
 }
