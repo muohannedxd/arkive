@@ -24,4 +24,12 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     // Find documents that belong to any of the department names
     @Query("SELECT DISTINCT d FROM Document d JOIN d.departments dept WHERE dept.name IN :departmentNames")
     List<Document> findByDepartmentNames(@Param("departmentNames") List<String> departmentNames);
+    
+    // Find documents by departments and with null folder ID
+    @Query("SELECT DISTINCT d FROM Document d JOIN d.departments dept WHERE dept.name IN :departmentNames AND d.folder IS NULL")
+    List<Document> findByDepartmentNamesAndNoFolder(@Param("departmentNames") List<String> departmentNames);
+    
+    // Find documents with null folder ID
+    @Query("SELECT d FROM Document d WHERE d.folder IS NULL")
+    List<Document> findByNoFolder();
 }

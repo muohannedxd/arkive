@@ -16,6 +16,9 @@ public interface DocumentService {
    
    // New method to get documents by multiple departments
    List<DocumentDto> getDocumentsByDepartments(List<String> departmentNames);
+   
+   // New method to filter documents by departments and folder ID status
+   List<DocumentDto> filterDocuments(List<String> departments, Boolean noFolderId);
 
    List<DocumentDto> getDocumentsByCategory(String category);
 

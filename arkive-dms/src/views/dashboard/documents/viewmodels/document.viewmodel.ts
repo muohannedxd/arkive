@@ -30,18 +30,26 @@ export default function useDocument() {
     setError(null);
     
     try {
-      // Start with the department-specific endpoint for unfiled documents
-      let endpoint = '/documents/department';
+      // Get user departments
+      const userDepartments = user?.departments?.map(dept => dept.name) || [];
       
-      if (userDepartment) {
-        endpoint = `/documents/department/${encodeURIComponent(userDepartment)}`;
+      if (userDepartments.length === 0) {
+        // If user has no departments, set empty documents and return
+        setDocumentsData([]);
+        return;
       }
       
-      const response = await axiosClient.get(endpoint);
-      let documentsData = response.data?.data || [];
+      console.log("User departments:", userDepartments);
       
-      // Filter to include only documents without folders
-      documentsData = documentsData.filter((doc: any) => !doc.folderId);
+      // Use the filter endpoint to get documents without folders
+      const response = await axiosClient.post('/documents/filter', {
+        departments: userDepartments,
+        noFolderId: true
+      });
+      
+      console.log("Documents response:", response.data);
+      
+      let documentsData = response.data?.data || [];
 
       // Apply additional filters from UI
       if (documentFilters.department) {
@@ -84,7 +92,7 @@ export default function useDocument() {
     } finally {
       setIsLoading(false);
     }
-  }, [documentFilters, documentSearchKey, setDocumentsData, userDepartment, toast]);
+  }, [documentFilters, documentSearchKey, setDocumentsData, userDepartment, toast, user?.departments]);
 
   useEffect(() => {
     fetchDocuments();

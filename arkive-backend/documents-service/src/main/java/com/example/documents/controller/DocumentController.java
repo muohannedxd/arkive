@@ -9,8 +9,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/documents")
@@ -53,6 +55,21 @@ public class DocumentController {
     public ResponseEntity<ApiResponse<List<DocumentDto>>> getDocumentsByCategory(@PathVariable String category) {
         List<DocumentDto> documents = documentService.getDocumentsByCategory(category);
         return ResponseEntity.ok(ApiResponse.success("Category Documents retrieved successfully", documents));
+    }
+    
+    @SuppressWarnings("unchecked")
+    @RequestMapping(value = "/filter", method = {RequestMethod.POST, RequestMethod.GET})
+    public ResponseEntity<ApiResponse<List<DocumentDto>>> filterDocuments(@RequestBody(required = false) Map<String, Object> filterParams) {
+        List<String> departments = null;
+        Boolean noFolderId = null;
+        
+        if (filterParams != null) {
+            departments = (List<String>) filterParams.get("departments");
+            noFolderId = (Boolean) filterParams.get("noFolderId");
+        }
+        
+        List<DocumentDto> documents = documentService.filterDocuments(departments, noFolderId);
+        return ResponseEntity.ok(ApiResponse.success("Documents filtered successfully", documents));
     }
 
     @PostMapping(consumes = "multipart/form-data")

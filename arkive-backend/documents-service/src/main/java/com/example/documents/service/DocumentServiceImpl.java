@@ -80,6 +80,29 @@ public class DocumentServiceImpl implements DocumentService {
             .map(this::mapToDto)
             .collect(Collectors.toList());
    }
+   
+   @Override
+   public List<DocumentDto> filterDocuments(List<String> departments, Boolean noFolderId) {
+      List<Document> documents;
+      
+      if (departments != null && !departments.isEmpty() && noFolderId != null && noFolderId) {
+         // Filter documents by departments and no folder ID
+         documents = documentRepository.findByDepartmentNamesAndNoFolder(departments);
+      } else if (departments != null && !departments.isEmpty()) {
+         // Filter documents by departments only
+         documents = documentRepository.findByDepartmentNames(departments);
+      } else if (noFolderId != null && noFolderId) {
+         // Filter documents by no folder ID only
+         documents = documentRepository.findByNoFolder();
+      } else {
+         // No filters applied, return all documents
+         documents = documentRepository.findAll();
+      }
+      
+      return documents.stream()
+            .map(this::mapToDto)
+            .collect(Collectors.toList());
+   }
 
    @Override
    public DocumentDto getDocumentById(Long id) {
@@ -285,14 +308,8 @@ public class DocumentServiceImpl implements DocumentService {
       documentDto.setOwnerId(document.getOwnerId());
       documentDto.setOwnerName(document.getOwnerName());
       
-      // Map departments
-      if (document.getDepartments() != null) {
-          documentDto.setDepartments(
-              document.getDepartments().stream()
-                  .map(Department::getName)
-                  .collect(Collectors.toList())
-          );
-      }
+      // Removed mapping of departments
+      // We'll keep only the single department field for simplicity
       
       // Only set the folderId if the document has a folder
       if (document.getFolder() != null) {
