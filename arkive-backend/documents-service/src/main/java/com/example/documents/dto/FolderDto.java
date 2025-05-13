@@ -6,8 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -18,11 +16,8 @@ public class FolderDto {
     @NotBlank(message = "Folder title cannot be blank")
     private String title;
     
-    // Temporarily keeping the department field for backward compatibility
+    @NotBlank(message = "Department cannot be blank")
     private String department;
-    
-    // Single field for departments
-    private List<String> departments = new ArrayList<>();
     
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

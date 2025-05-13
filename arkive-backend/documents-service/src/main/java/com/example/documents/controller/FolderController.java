@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -26,14 +27,19 @@ public class FolderController {
         return ResponseEntity.ok(ApiResponse.success("Folders retrieved successfully", folders));
     }
 
+    @GetMapping("/department/{department}")
+    public ResponseEntity<ApiResponse<List<FolderDto>>> getFoldersByDepartment(@PathVariable String department) {
+        log.info("Fetching folders for department: {}", department);
+        List<FolderDto> folders = folderService.getFoldersByDepartment(department);
+        log.info("Found {} folders for department: {}", folders.size(), department);
+        return ResponseEntity.ok(ApiResponse.success("Folders for department retrieved successfully", folders));
+    }
+
     @GetMapping("/departments")
     public ResponseEntity<ApiResponse<List<FolderDto>>> getFoldersByDepartments(@RequestParam List<String> departments) {
         log.info("Fetching folders for departments: {}", departments);
         List<FolderDto> folders = folderService.getFoldersByDepartments(departments);
         log.info("Found {} folders for departments: {}", folders.size(), departments);
-        for (FolderDto folder : folders) {
-            log.info("Folder: id={}, title={}, departments={}", folder.getId(), folder.getTitle(), folder.getDepartments());
-        }
         return ResponseEntity.ok(ApiResponse.success("Folders for multiple departments retrieved successfully", folders));
     }
 
@@ -47,6 +53,14 @@ public class FolderController {
     public ResponseEntity<ApiResponse<FolderDto>> createFolder(@Valid @RequestBody FolderDto folderDto) {
         FolderDto createdFolder = folderService.createFolder(folderDto);
         return new ResponseEntity<>(ApiResponse.success("Folder created successfully", createdFolder), HttpStatus.CREATED);
+    }
+
+    @PostMapping("/filter")
+    public ResponseEntity<ApiResponse<List<FolderDto>>> filterFoldersByDepartments(@RequestBody Map<String, List<String>> request) {
+        List<String> departments = request.get("departments");
+        log.info("Filtering folders for departments: {}", departments);
+        List<FolderDto> folders = folderService.getFoldersByDepartments(departments);
+        return ResponseEntity.ok(ApiResponse.success("Folders filtered by departments retrieved successfully", folders));
     }
 
     @PutMapping("/{id}")

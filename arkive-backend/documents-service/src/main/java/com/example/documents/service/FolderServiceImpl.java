@@ -6,6 +6,7 @@ import com.example.documents.model.Department;
 import com.example.documents.model.Folder;
 import com.example.documents.repository.FolderRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,137 +14,140 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class FolderServiceImpl implements FolderService {
 
-   private final FolderRepository folderRepository;
-   private final DepartmentService departmentService;
+    private final FolderRepository folderRepository;
+    private final DepartmentService departmentService;
 
-   @Override
-   public List<FolderDto> getAllFolders() {
-      List<Folder> folders = folderRepository.findAll();
-      return folders.stream()
-            .map(this::mapToDto)
-            .collect(Collectors.toList());
-   }
+    @Override
+    public List<FolderDto> getAllFolders() {
+        List<Folder> folders = folderRepository.findAll();
+        return folders.stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
    
-   @Override
-   public List<FolderDto> getFoldersByDepartments(List<String> departmentNames) {
-      if (departmentNames == null || departmentNames.isEmpty()) {
-          return new ArrayList<>();
-      }
+    @Override
+    public List<FolderDto> getFoldersByDepartment(String departmentName) {
+        if (departmentName == null || departmentName.isEmpty()) {
+            return new ArrayList<>();
+        }
       
-      System.out.println("Searching for folders with departments: " + departmentNames);
+        List<Folder> folders = folderRepository.findByDepartmentName(departmentName);
+        log.info("Found {} folders for department: {}", folders.size(), departmentName);
       
-      // Convert all department names to lowercase for case-insensitive comparison
-      List<String> departmentNamesLower = departmentNames.stream()
-          .map(String::toLowerCase)
-          .collect(Collectors.toList());
+        return folders.stream()
+                .sorted(Comparator.comparing(Folder::getCreatedAt).reversed())
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+   
+    @Override
+    public List<FolderDto> getFoldersByDepartments(List<String> departmentNames) {
+        if (departmentNames == null || departmentNames.isEmpty()) {
+            return new ArrayList<>();
+        }
       
-      // Get folders matching any of the given departments
-      List<Folder> folders = folderRepository.findByDepartmentNames(departmentNamesLower);
-      System.out.println("Found " + folders.size() + " folders for departments: " + departmentNames);
+        log.info("Searching for folders with departments: {}", departmentNames);
       
-      // Log details about each folder found
-      for (Folder folder : folders) {
-          System.out.println("Found folder: ID=" + folder.getId() + ", Title=" + folder.getTitle() + 
-                           ", Departments=" + folder.getDepartments().stream().map(Department::getName).collect(Collectors.toList()));
-      }
+        List<Folder> folders = folderRepository.findByDepartmentNamesIn(departmentNames);
+        log.info("Found {} folders for departments: {}", folders.size(), departmentNames);
       
-      return folders.stream()
-            .sorted(Comparator.comparing(Folder::getCreatedAt).reversed())
-            .map(this::mapToDto)
-            .collect(Collectors.toList());
-   }
+        return folders.stream()
+                .sorted(Comparator.comparing(Folder::getCreatedAt).reversed())
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
 
-   @Override
-   public FolderDto getFolderById(Long id) {
-      Folder folder = folderRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Folder not found with id: " + id));
-      return mapToDto(folder);
-   }
+    @Override
+    public FolderDto getFolderById(Long id) {
+        Folder folder = folderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Folder not found with id: " + id));
+        return mapToDto(folder);
+    }
 
-   @Override
-   @Transactional
-   public FolderDto createFolder(FolderDto folderDto) {
-      Folder folder = mapToEntity(folderDto);
+    @Override
+    @Transactional
+    public FolderDto createFolder(FolderDto folderDto) {
+        log.info("Creating folder with title: {} and department: {}", folderDto.getTitle(), folderDto.getDepartment());
       
-      // Set the departments for the folder
-      if (folderDto.getDepartments() != null && !folderDto.getDepartments().isEmpty()) {
-          List<Department> departments = departmentService.findOrCreateDepartments(folderDto.getDepartments());
-          folder.getDepartments().addAll(departments);
-      }
-      
-      Folder savedFolder = folderRepository.save(folder);
-      return mapToDto(savedFolder);
-   }
+        if (folderDto.getTitle() == null || folderDto.getTitle().trim().isEmpty()) {
+            throw new IllegalArgumentException("Folder title must not be empty");
+        }
 
-   @Override
-   @Transactional
-   public FolderDto updateFolder(Long id, FolderDto folderDto) {
-      Folder folder = folderRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Folder not found with id: " + id));
+        if (folderDto.getDepartment() == null || folderDto.getDepartment().trim().isEmpty()) {
+            throw new IllegalArgumentException("Department must be specified for a folder");
+        }
 
-      folder.setTitle(folderDto.getTitle());
-      
-      // Update departments if provided
-      if (folderDto.getDepartments() != null) {
-          folder.getDepartments().clear();
-          if (!folderDto.getDepartments().isEmpty()) {
-              List<Department> departments = departmentService.findOrCreateDepartments(folderDto.getDepartments());
-              folder.getDepartments().addAll(departments);
-          }
-      }
-      
-      Folder updatedFolder = folderRepository.save(folder);
-      return mapToDto(updatedFolder);
-   }
+        try {
+            Department department = departmentService.findOrCreateDepartment(folderDto.getDepartment().trim());
+            if (department == null || department.getId() == null) {
+                throw new IllegalStateException("Failed to create or find department: " + folderDto.getDepartment());
+            }
 
-   @Override
-   @Transactional
-   public void deleteFolder(Long id) {
-      if (!folderRepository.existsById(id)) {
-         throw new ResourceNotFoundException("Folder not found with id: " + id);
-      }
-      folderRepository.deleteById(id);
-   }
+            Folder folder = new Folder();
+            folder.setTitle(folderDto.getTitle().trim());
+            folder.setDepartment(department);
+            folder.setCreatedAt(LocalDateTime.now());
+            folder.setUpdatedAt(LocalDateTime.now());
 
-   private FolderDto mapToDto(Folder folder) {
-      FolderDto folderDto = new FolderDto();
-      folderDto.setId(folder.getId());
-      folderDto.setTitle(folder.getTitle());
-      folderDto.setDepartment(folder.getDepartment()); // Map the temporary department field
-      folderDto.setCreatedAt(folder.getCreatedAt());
-      folderDto.setUpdatedAt(folder.getUpdatedAt());
-      
-      // Map departments
-      if (folder.getDepartments() != null) {
-          folderDto.setDepartments(
-              folder.getDepartments().stream()
-                  .map(Department::getName)
-                  .collect(Collectors.toList())
-          );
-      }
-      
-      return folderDto;
-   }
+            Folder savedFolder = folderRepository.save(folder);
+            log.info("Folder saved successfully with ID: {} in department: {}", savedFolder.getId(), department.getName());
+          
+            return mapToDto(savedFolder);
+        } catch (Exception e) {
+            log.error("Error creating folder: {}", e.getMessage(), e);
+            throw new IllegalStateException("Failed to create folder: " + e.getMessage(), e);
+        }
+    }
 
-   private Folder mapToEntity(FolderDto folderDto) {
-      Folder folder = new Folder();
-      folder.setTitle(folderDto.getTitle());
+    @Override
+    @Transactional
+    public FolderDto updateFolder(Long id, FolderDto folderDto) {
+        Folder folder = folderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Folder not found with id: " + id));
+
+        if (folderDto.getTitle() != null && !folderDto.getTitle().trim().isEmpty()) {
+            folder.setTitle(folderDto.getTitle().trim());
+        }
       
-      // Set the temporary department field to support the database constraint
-      if (folderDto.getDepartments() != null && !folderDto.getDepartments().isEmpty()) {
-          folder.setDepartment(folderDto.getDepartments().get(0));
-      } else if (folderDto.getDepartment() != null) {
-          folder.setDepartment(folderDto.getDepartment());
-      } else {
-          // Default to empty string to avoid null constraint violation
-          folder.setDepartment("");
-      }
-      
-      return folder;
-   }
+        if (folderDto.getDepartment() != null && !folderDto.getDepartment().trim().isEmpty()) {
+            log.info("Updating folder with department: {}", folderDto.getDepartment());
+            Department department = departmentService.findOrCreateDepartment(folderDto.getDepartment().trim());
+            folder.setDepartment(department);
+        }
+
+        folder.setUpdatedAt(LocalDateTime.now());
+        Folder updatedFolder = folderRepository.save(folder);
+        return mapToDto(updatedFolder);
+    }
+
+    @Override
+    @Transactional
+    public void deleteFolder(Long id) {
+        if (!folderRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Folder not found with id: " + id);
+        }
+        folderRepository.deleteById(id);
+    }
+
+    private FolderDto mapToDto(Folder folder) {
+        FolderDto folderDto = new FolderDto();
+        folderDto.setId(folder.getId());
+        folderDto.setTitle(folder.getTitle());
+        
+        if (folder.getDepartment() != null) {
+            folderDto.setDepartment(folder.getDepartment().getName());
+        }
+        
+        folderDto.setCreatedAt(folder.getCreatedAt());
+        folderDto.setUpdatedAt(folder.getUpdatedAt());
+        
+        return folderDto;
+    }
 }

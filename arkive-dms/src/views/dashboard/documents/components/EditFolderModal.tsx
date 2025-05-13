@@ -10,12 +10,7 @@ import {
   FormLabel,
   Input,
   Text,
-  Box,
-  Tag,
-  TagLabel,
-  TagCloseButton,
-  Wrap,
-  WrapItem,
+  Select,
 } from "@chakra-ui/react";
 
 interface EditFolderModalProps {
@@ -25,8 +20,9 @@ interface EditFolderModalProps {
   setFolderTitle: (title: string) => void;
   handleSubmit: () => void;
   isLoading: boolean;
-  folderDepartments: string[];
-  setFolderDepartments: (departments: string[]) => void;
+  currentDepartment: string;
+  selectedDepartment: string;
+  setSelectedDepartment: (department: string) => void;
   userDepartments: string[];
 }
 
@@ -37,25 +33,14 @@ export default function EditFolderModal({
   setFolderTitle,
   handleSubmit,
   isLoading,
-  folderDepartments = [],
-  setFolderDepartments,
+  currentDepartment,
+  selectedDepartment,
+  setSelectedDepartment,
   userDepartments = [],
 }: EditFolderModalProps) {
   const handleSave = () => {
     handleSubmit();
     onClose();
-  };
-  
-  // Add a department from user departments to the folder
-  const addDepartment = (dept: string) => {
-    if (!folderDepartments.includes(dept)) {
-      setFolderDepartments([...folderDepartments, dept]);
-    }
-  };
-  
-  // Remove a department from the folder
-  const removeDepartment = (dept: string) => {
-    setFolderDepartments(folderDepartments.filter(d => d !== dept));
   };
 
   return (
@@ -79,46 +64,26 @@ export default function EditFolderModal({
             </div>
             
             <div>
-              <FormLabel>Departments</FormLabel>
-              <Box mb={3}>
-                <Wrap spacing={2}>
-                  {folderDepartments.map((dept, index) => (
-                    <WrapItem key={index}>
-                      <Tag size="md" colorScheme="blue" borderRadius="full" variant="solid">
-                        <TagLabel>{dept}</TagLabel>
-                        <TagCloseButton onClick={() => removeDepartment(dept)} />
-                      </Tag>
-                    </WrapItem>
-                  ))}
-                </Wrap>
-                {folderDepartments.length === 0 && (
-                  <Text fontSize="sm" color="gray.500">No departments assigned</Text>
+              <FormControl id="folder-department" isRequired>
+                <FormLabel>Department</FormLabel>
+                {userDepartments.length > 0 ? (
+                  <Select 
+                    value={selectedDepartment || currentDepartment} 
+                    onChange={(e) => setSelectedDepartment(e.target.value)}
+                    borderRadius="lg"
+                  >
+                    {userDepartments.map((dept, index) => (
+                      <option key={index} value={dept}>
+                        {dept}
+                      </option>
+                    ))}
+                  </Select>
+                ) : (
+                  <Text color="red.500">
+                    You must be associated with at least one department to edit folders.
+                  </Text>
                 )}
-              </Box>
-              
-              {userDepartments.length > 0 && (
-                <Box mt={2}>
-                  <Text fontSize="sm" fontWeight="medium" mb={1}>Add department:</Text>
-                  <Wrap spacing={2}>
-                    {userDepartments
-                      .filter(dept => !folderDepartments.includes(dept))
-                      .map((dept, index) => (
-                        <WrapItem key={index}>
-                          <Tag 
-                            size="md" 
-                            colorScheme="gray" 
-                            borderRadius="full" 
-                            cursor="pointer"
-                            onClick={() => addDepartment(dept)}
-                          >
-                            <TagLabel>{dept}</TagLabel>
-                            <Box as="span" ml={1}>+</Box>
-                          </Tag>
-                        </WrapItem>
-                      ))}
-                  </Wrap>
-                </Box>
-              )}
+              </FormControl>
             </div>
             
             <div className="my-4 md:my-6">
@@ -127,6 +92,7 @@ export default function EditFolderModal({
                 isLoading={isLoading}
                 variant={"error"}
                 className="w-full bg-mainbrand text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-800"
+                isDisabled={userDepartments.length === 0}
               >
                 Save Changes
               </Button>

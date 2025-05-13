@@ -4,9 +4,7 @@ import {
   IconButton,
   MenuList,
   MenuItem,
-  Tooltip,
   Tag,
-  HStack,
 } from "@chakra-ui/react";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { FaFolder } from "react-icons/fa";
@@ -16,7 +14,7 @@ import { RiDeleteBin2Line } from "react-icons/ri";
 interface FolderInterface {
   id: number;
   title: string;
-  departments: string[];
+  department: string;
   createdAt: string;
   onNavigate: (id: number) => void;
   onEdit: (id: number, title: string) => void;
@@ -25,7 +23,7 @@ interface FolderInterface {
 }
 
 export default function Folder(props: FolderInterface) {
-  const { id, title, departments = [], createdAt, onNavigate, onEdit, onDelete, formatDate } = props;
+  const { id, title, department, createdAt, onNavigate, onEdit, onDelete, formatDate } = props;
 
   // Handle double click to navigate into folder
   const handleDoubleClick = () => {
@@ -94,18 +92,10 @@ export default function Folder(props: FolderInterface) {
         </div>
       </div>
       
-      {/* Display departments as tags */}
-      {departments.length > 0 && (
-        <HStack spacing={1} mt={1} maxW="100%" overflowX="hidden">
-          {departments.map((dept, index) => (
-            <Tooltip key={index} label={dept} placement="top">
-              <Tag size="sm" colorScheme="blue" mr={1} mb={1}>
-                {dept.length > 10 ? `${dept.substring(0, 8)}...` : dept}
-              </Tag>
-            </Tooltip>
-          ))}
-        </HStack>
-      )}
+      {/* Display department as tag */}
+      <Tag size="sm" colorScheme="blue" title={department}>
+        {department}
+      </Tag>
     </div>
   );
 }

@@ -11,12 +11,14 @@ import java.util.List;
 
 @Repository
 public interface FolderRepository extends JpaRepository<Folder, Long> {
-    // Removed legacy findByDepartment method
+    // Find folders by a single department entity
+    List<Folder> findByDepartment(Department department);
     
-    // Find folders by department entities
-    List<Folder> findByDepartmentsIn(List<Department> departments);
+    // Find folders by department name with case insensitivity
+    @Query("SELECT f FROM Folder f WHERE LOWER(f.department.name) = LOWER(:departmentName)")
+    List<Folder> findByDepartmentName(@Param("departmentName") String departmentName);
     
-    // Find folders by department names with case insensitivity
-    @Query("SELECT DISTINCT f FROM Folder f JOIN f.departments d WHERE LOWER(d.name) IN (:departmentNames)")
-    List<Folder> findByDepartmentNames(@Param("departmentNames") List<String> departmentNames);
+    // Find folders by multiple department names (for users with multiple departments)
+    @Query("SELECT DISTINCT f FROM Folder f WHERE f.department.name IN :departmentNames")
+    List<Folder> findByDepartmentNamesIn(@Param("departmentNames") List<String> departmentNames);
 }

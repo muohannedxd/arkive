@@ -1,9 +1,8 @@
 import Folder from "./components/folder";
 import FileCard from "./components/fileCard";
-import { Button, Spinner, Text } from "@chakra-ui/react";
+import { Button, Spinner } from "@chakra-ui/react";
 import { TiFolderAdd } from "react-icons/ti";
 import { RiFileAddLine } from "react-icons/ri";
-import { BsSortDownAlt } from "react-icons/bs";
 import CreateFolderModal from "./components/CreateFolderModal";
 import EditFolderModal from "./components/EditFolderModal";
 import DeleteFolderModal from "./components/DeleteFolderModal";
@@ -15,7 +14,7 @@ import { useDocumentStore } from "./stores/document.store";
 
 export default function Documents() {
 
-  
+
   // Folder hooks
   const {
     foldersData,
@@ -39,8 +38,8 @@ export default function Documents() {
     onCloseDeleteFolderModal,
     handleConfirmDelete,
     userDepartments,
-    folderDepartments,
-    setFolderDepartments
+    selectedDepartment,
+    setSelectedDepartment
   } = useFolders();
 
   // Document hooks
@@ -66,8 +65,8 @@ export default function Documents() {
       <div className="h-fit">
         {/* Show folder contents if a folder is selected, otherwise show folders and documents */}
         {currentFolderId ? (
-          <FolderContent 
-            folderId={currentFolderId} 
+          <FolderContent
+            folderId={currentFolderId}
             folderTitle={currentFolder?.title}
             onBack={navigateBack}
           />
@@ -80,18 +79,12 @@ export default function Documents() {
                 <div className="flex items-center text-sm text-gray-600 mt-1">
                   {canCreateFolder && (
                     <div className="flex flex-wrap items-center">
-                      <span className="mr-1">Departments:</span>
-                      {userDepartments.map((dept, i) => (
-                        <span key={i} className="mr-1 italic">
-                          {dept}{i < userDepartments.length - 1 ? "," : ""}
-                        </span>
-                      ))}
+                      <span className="mr-1">Your Department:</span>
+                      <span className="italic">
+                        {userDepartments.join(", ")}
+                      </span>
                     </div>
                   )}
-                </div>
-                <div className="flex items-center text-sm text-gray-600 mt-1">
-                  <BsSortDownAlt className="mr-1" />
-                  <Text>Sorted by newest creation date</Text>
                 </div>
               </div>
               <Button
@@ -106,6 +99,7 @@ export default function Documents() {
               </Button>
             </div>
 
+            {/* Folders Grid */}
             {foldersLoading ? (
               <div className="mt-4 flex min-h-[20vh] items-center justify-center">
                 <Spinner
@@ -118,11 +112,9 @@ export default function Documents() {
             ) : foldersError ? (
               <div className="mt-4 flex min-h-[20vh] flex-col items-center justify-center space-y-3">
                 <p className="text-xl font-semibold text-red-600">
-                  Error Loading Folders {foldersError}
+                  Error Loading Folders
                 </p>
-                <p className="text-gray-700">
-                  {foldersError}
-                </p>
+                <p className="text-gray-700">{foldersError}</p>
               </div>
             ) : foldersData.length === 0 ? (
               <div className="mt-4 flex min-h-[20vh] flex-col items-center justify-center space-y-3">
@@ -130,7 +122,7 @@ export default function Documents() {
                   No Folders Yet
                 </p>
                 <p className="text-gray-600">
-                  {canCreateFolder 
+                  {canCreateFolder
                     ? "Click 'Create a Folder' to add your first folder."
                     : "You must be assigned to a department to create folders. Contact your administrator."
                   }
@@ -143,15 +135,15 @@ export default function Documents() {
                     key={folder.id}
                     id={folder.id}
                     title={folder.title}
-                    departments={folder.departments || []}
+                    department={folder.department}
                     createdAt={folder.createdAt}
                     onNavigate={navigateToFolder}
-                    onEdit={(id, title) => startEditFolder({ 
-                      id, 
-                      title, 
-                      departments: folder.departments || [],
-                      createdAt: folder.createdAt, 
-                      updatedAt: folder.updatedAt 
+                    onEdit={(id, title) => startEditFolder({
+                      id,
+                      title,
+                      department: folder.department,
+                      createdAt: folder.createdAt,
+                      updatedAt: folder.updatedAt
                     })}
                     onDelete={confirmDeleteFolder}
                     formatDate={formatDate}
@@ -204,7 +196,7 @@ export default function Documents() {
                       No Documents Found
                     </p>
                     <p className="text-gray-600 text-center max-w-md">
-                      {userDepartments.length > 0 
+                      {userDepartments.length > 0
                         ? `There are no documents in your departments yet. Click 'Add Document' to upload your first document.`
                         : "There are no documents to display. Contact your administrator if you need access to documents."
                       }
@@ -244,8 +236,11 @@ export default function Documents() {
         setFolderTitle={setFolderTitle}
         handleSubmit={handleSubmit}
         isLoading={foldersLoading}
+        userDepartments={userDepartments}
+        selectedDepartment={selectedDepartment}
+        setSelectedDepartment={setSelectedDepartment}
       />
-      
+
       <EditFolderModal
         isOpen={isOpenEditFolderModal}
         onClose={onCloseEditFolderModal}
@@ -253,18 +248,17 @@ export default function Documents() {
         setFolderTitle={setFolderTitle}
         handleSubmit={handleSubmit}
         isLoading={foldersLoading}
-        folderDepartments={folderDepartments}
-        setFolderDepartments={setFolderDepartments}
-        userDepartments={userDepartments}
-      />
-      
+        selectedDepartment={selectedDepartment}
+        setSelectedDepartment={setSelectedDepartment}
+        userDepartments={userDepartments} currentDepartment={""} />
+
       <DeleteFolderModal
         isOpen={isOpenDeleteFolderModal}
         onClose={onCloseDeleteFolderModal}
         onConfirm={handleConfirmDelete}
         isLoading={foldersLoading}
       />
-      
+
       <AddDocumentModal
         isOpen={isOpenAddDocumentModal}
         onClose={onCloseAddDocumentModal}

@@ -11,7 +11,7 @@ export default function useFolders() {
   // State for create/edit folder form
   const [folderTitle, setFolderTitle] = useState("");
   const [editFolderId, setEditFolderId] = useState<number | null>(null);
-  const [folderDepartments, setFolderDepartments] = useState<string[]>([]);
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("");
 
   // Toast for notifications
   const toast = useToast();
@@ -25,6 +25,13 @@ export default function useFolders() {
       ? user.departments.map(dept => dept.name) 
       : []
   ), [user?.departments]);
+
+  // Set default selected department when userDepartments change
+  useEffect(() => {
+    if (userDepartments.length > 0 && !selectedDepartment) {
+      setSelectedDepartment(userDepartments[0]);
+    }
+  }, [userDepartments, selectedDepartment]);
 
   // Get folder store data and actions
   const {
@@ -48,39 +55,17 @@ export default function useFolders() {
       let response;
       
       if (userDepartments.length > 0) {
-        console.log("User departments:", userDepartments);
-        
-        // Build departments query with proper encoding
-        const departmentsQuery = userDepartments
-          .map(dept => `departments=${encodeURIComponent(dept)}`)
-          .join('&');
-        
-        const url = `/folders/departments?${departmentsQuery}`;
-        console.log("Fetching folders with URL:", url);
-        
-        response = await axiosClient.get(url);
-        console.log("Response from departments endpoint:", response.data);
+        // Send departments as an array in request body instead of query params
+        response = await axiosClient.post("/folders/filter", {
+          departments: userDepartments
+        });
       } else {
-        // Fallback to regular folders endpoint if no departments
         response = await axiosClient.get("/folders");
-        console.log("Response from general folders endpoint:", response.data);
       }
       
       if (response.data?.data) {
-        // Process and log each folder to help with debugging
-        const folders = response.data.data;
-        console.log(`Received ${folders.length} folders from API:`, folders);
-        
-        folders.forEach((folder: FolderObject) => {
-          console.log(`Folder ${folder.id}: ${folder.title}`, {
-            departments: folder.departments || [],
-            createdAt: folder.createdAt
-          });
-        });
-        
-        setFoldersData(folders);
+        setFoldersData(response.data.data);
       } else {
-        console.log("No folders data in response");
         setFoldersData([]);
       }
     } catch (err: any) {
@@ -114,7 +99,7 @@ export default function useFolders() {
   const clearCreateFolderForm = () => {
     setFolderTitle("");
     setEditFolderId(null);
-    setFolderDepartments([]);
+    setSelectedDepartment(userDepartments[0] || "");
   };
 
   /**
@@ -151,7 +136,7 @@ export default function useFolders() {
         // Update existing folder
         await axiosClient.put(`/folders/${editFolderId}`, {
           title: folderTitle.trim(),
-          departments: folderDepartments.length > 0 ? folderDepartments : userDepartments
+          department: selectedDepartment
         });
         
         toast({
@@ -162,10 +147,10 @@ export default function useFolders() {
           isClosable: true,
         });
       } else {
-        // Create new folder with all user's departments
+        // Create new folder
         await axiosClient.post("/folders", {
           title: folderTitle.trim(),
-          departments: userDepartments
+          department: selectedDepartment || userDepartments[0]
         });
         
         toast({
@@ -242,7 +227,7 @@ export default function useFolders() {
   const startEditFolder = (folder: FolderObject) => {
     setFolderTitle(folder.title);
     setEditFolderId(folder.id);
-    setFolderDepartments(folder.departments || []);
+    setSelectedDepartment(folder.department);
     onOpenEditFolderModal();
   };
 
@@ -305,8 +290,8 @@ export default function useFolders() {
     clearCreateFolderForm,
     handleSubmit,
     editFolderId,
-    folderDepartments,
-    setFolderDepartments,
+    selectedDepartment,
+    setSelectedDepartment,
     
     // Navigation
     currentFolderId,
