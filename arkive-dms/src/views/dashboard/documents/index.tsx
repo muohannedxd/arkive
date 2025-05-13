@@ -190,16 +190,38 @@ export default function Documents() {
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5">
-                  {documentsData.map((doc) => (
-                    <FileCard
-                      key={doc.id}
-                      title={doc.title}
-                      owner={doc.owner}
-                      document={doc.document}
-                    />
-                  ))}
-                </div>
+                {documentsData.length === 0 ? (
+                  <div className="mt-4 flex min-h-[20vh] flex-col items-center justify-center space-y-3 bg-gray-50 rounded-lg py-10">
+                    <p className="text-xl font-semibold text-gray-700">
+                      No Documents Found
+                    </p>
+                    <p className="text-gray-600 text-center max-w-md">
+                      {userDepartment 
+                        ? `There are no documents in the ${userDepartment} department yet. Click 'Add Document' to upload your first document.`
+                        : "There are no documents to display. Contact your administrator if you need access to documents."
+                      }
+                    </p>
+                    <Button
+                      onClick={onOpenAddDocumentModal}
+                      leftIcon={<RiFileAddLine />}
+                      variant={"brand"}
+                      className="bg-mainbrand text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-800 mt-4"
+                    >
+                      Add Your First Document
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5">
+                    {documentsData.map((doc) => (
+                      <FileCard
+                        key={doc.id}
+                        title={doc.title}
+                        owner={doc.owner}
+                        document={doc.document}
+                      />
+                    ))}
+                  </div>
+                )}
               </>
             )}
           </>
