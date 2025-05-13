@@ -152,7 +152,7 @@ export default function Documents() {
               </div>
             )}
 
-            {/* Documents Section */}
+            {/* Documents without Folder Section */}
             {documentsLoading ? (
               <div className="mt-10 flex min-h-[40vh] items-center justify-center">
                 <Spinner
