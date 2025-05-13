@@ -1,7 +1,9 @@
 import { useDisclosure } from "@chakra-ui/hooks";
 import { useState, useEffect, useCallback } from "react";
 import { useDocumentStore } from "../stores/document.store";
-import { documents } from "../variables/docs.data";
+import axiosClient from "lib/axios";
+import { useToast } from "@chakra-ui/react";
+import { useAuthStore } from "views/auth/stores/auth.store";
 
 export default function useDocument() {
   /**
@@ -11,43 +13,79 @@ export default function useDocument() {
     useDocumentStore();
 
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Toast for notifications
+  const toast = useToast();
+  
+  // Get user information from auth store to determine department
+  const { user } = useAuthStore();
+  const userDepartment = user?.department || "";
 
   const fetchDocuments = useCallback(async () => {
     setIsLoading(true);
+    setError(null);
+    
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulated delay
+      // Start with the department-specific endpoint for unfiled documents
+      let endpoint = '/documents/department';
+      
+      if (userDepartment) {
+        endpoint = `/documents/department/${encodeURIComponent(userDepartment)}`;
+      }
+      
+      const response = await axiosClient.get(endpoint);
+      let documentsData = response.data?.data || [];
+      
+      // Filter to include only documents without folders
+      documentsData = documentsData.filter((doc: any) => !doc.folderId);
 
-      let filteredDocs = documents;
-
+      // Apply additional filters from UI
       if (documentFilters.department) {
-        filteredDocs = filteredDocs.filter(
-          (doc) => doc.department === documentFilters.department
+        documentsData = documentsData.filter(
+          (doc: any) => doc.department === documentFilters.department
         );
       }
 
+      // Apply search filter
       if (documentSearchKey.trim()) {
         const lowerCaseSearchKey = documentSearchKey.toLowerCase();
-        filteredDocs = filteredDocs.filter(
-          (doc) =>
+        documentsData = documentsData.filter(
+          (doc: any) =>
             doc.title.toLowerCase().includes(lowerCaseSearchKey) ||
-            doc.owner.toLowerCase().includes(lowerCaseSearchKey)
+            doc.ownerName?.toLowerCase().includes(lowerCaseSearchKey)
         );
       }
 
-      setDocumentsData(filteredDocs);
-      setError(false);
-    } catch (error) {
-      console.error("Failed to fetch documents:", error);
-      setError(true);
+      // Transform API response to match DocumentObject structure
+      const formattedDocuments = documentsData.map((doc: any) => ({
+        id: doc.id,
+        title: doc.title,
+        owner: doc.ownerName || "Unknown",
+        department: doc.department,
+        document: doc.url,
+        folder_id: doc.folderId
+      }));
+
+      setDocumentsData(formattedDocuments);
+    } catch (err: any) {
+      console.error("Failed to fetch documents:", err);
+      setError(err.response?.data?.message || "Failed to fetch documents");
+      toast({
+        title: "Error fetching documents",
+        description: err.response?.data?.message || "Failed to fetch documents",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setIsLoading(false);
     }
-  }, [documentFilters, documentSearchKey, setDocumentsData]);
+  }, [documentFilters, documentSearchKey, setDocumentsData, userDepartment, toast]);
 
   useEffect(() => {
     fetchDocuments();
-  }, [fetchDocuments, setDocumentsData, documentSearchKey, documentFilters]);
+  }, [fetchDocuments]);
 
   const retryDocumentsFetch = () => {
     fetchDocuments();
@@ -65,6 +103,8 @@ export default function useDocument() {
     isLoading,
     error,
     retryDocumentsFetch,
+    fetchDocuments,
+    userDepartment,
 
     // Adding documents
     isOpenAddDocumentModal,

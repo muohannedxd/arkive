@@ -11,7 +11,6 @@ import PdfPreview from "components/pdfpreview";
 import DocumentViewer from "./DocumentViewer";
 import { BsThreeDotsVertical, BsEye } from "react-icons/bs";
 import { FiDownload, FiEdit3, FiLock } from "react-icons/fi";
-import { IoHeartOutline, IoHeart } from "react-icons/io5";
 import { RiDeleteBin2Line } from "react-icons/ri";
 
 interface FileInterface {
@@ -23,7 +22,6 @@ interface FileInterface {
 
 export default function FileCard(props: FileInterface) {
   const { title, owner, document, extra } = props;
-  const [heart, setHeart] = useState(true);
   const [isOpen, setIsOpen] = useState(false); // Open document viewer
 
   // Extract file extension
@@ -55,19 +53,7 @@ export default function FileCard(props: FileInterface) {
               </div>
             )}
 
-            {/* Favorite Button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation(); // Prevent modal from opening on favorite click
-                setHeart(!heart);
-              }}
-              className="absolute right-3 top-3 flex items-center justify-center rounded-md bg-white p-2 text-mainbrand hover:cursor-pointer"
-              title="Add to favorite"
-            >
-              <div className="flex w-full items-center justify-center rounded-md text-xl hover:bg-gray-50 dark:text-navy-900">
-                {heart ? <IoHeartOutline /> : <IoHeart className="text-mainbrand" />}
-              </div>
-            </button>
+            
           </div>
 
           <div className="flex items-center justify-between px-1">
