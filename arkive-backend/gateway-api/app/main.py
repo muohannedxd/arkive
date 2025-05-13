@@ -1,7 +1,7 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
-from typing import Any
+from typing import Any, Union
 
 app = FastAPI(title="Arkive Gateway API")
 
@@ -27,9 +27,12 @@ SERVICE_URLS = {
 async def root():
     return {"message": "Arkive Gateway API is running"}
 
-async def proxy_request(request: Request, service: str, path: str) -> Any:
+async def proxy_request(request: Request, service: str, path: str) -> Union[Response, Any]:
     if service not in SERVICE_URLS:
         raise HTTPException(status_code=404, detail=f"Service {service} not found")
+    
+    # Special handling for file downloads from the storage service
+    is_file_download = service == "storage" and path.startswith("/api/storage/download/")
     
     # Remove /api prefix and normalize path
     path = path.strip('/')
@@ -60,7 +63,26 @@ async def proxy_request(request: Request, service: str, path: str) -> Any:
                 follow_redirects=True
             )
             
-            # Handle response
+            # For file downloads, return the binary content with appropriate headers
+            if is_file_download:
+                # Get content type and other headers from the response
+                content_type = response.headers.get("content-type", "application/octet-stream")
+                content_disposition = response.headers.get("content-disposition", None)
+                
+                # Create a FastAPI Response with the raw content
+                fastapi_response = Response(
+                    content=response.content,
+                    media_type=content_type,
+                    status_code=response.status_code
+                )
+                
+                # Copy important headers from the original response
+                if content_disposition:
+                    fastapi_response.headers["content-disposition"] = content_disposition
+                
+                return fastapi_response
+            
+            # For regular API responses, return JSON
             try:
                 return response.json()
             except Exception:
@@ -92,7 +114,7 @@ async def documents_proxy(request: Request, path: str):
 async def folders_proxy(request: Request, path: str):
     return await proxy_request(request, "documents", f"/api/folders/{path}")
 
-# Storage Service Routes
+# Storage Service Routes - Special handling for binary files
 @app.api_route("/api/storage/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
 async def storage_proxy(request: Request, path: str):
     return await proxy_request(request, "storage", f"/api/storage/{path}")

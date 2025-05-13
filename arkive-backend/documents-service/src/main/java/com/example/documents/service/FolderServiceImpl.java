@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,6 +22,15 @@ public class FolderServiceImpl implements FolderService {
    public List<FolderDto> getAllFolders() {
       List<Folder> folders = folderRepository.findAll();
       return folders.stream()
+            .map(this::mapToDto)
+            .collect(Collectors.toList());
+   }
+   
+   @Override
+   public List<FolderDto> getFoldersByDepartment(String department) {
+      List<Folder> folders = folderRepository.findByDepartment(department);
+      return folders.stream()
+            .sorted(Comparator.comparing(Folder::getCreatedAt).reversed())
             .map(this::mapToDto)
             .collect(Collectors.toList());
    }
@@ -47,6 +57,8 @@ public class FolderServiceImpl implements FolderService {
             .orElseThrow(() -> new ResourceNotFoundException("Folder not found with id: " + id));
 
       folder.setTitle(folderDto.getTitle());
+      // Don't update department during edit to maintain folder organization
+      // If department changes are needed, would need additional validation/migration logic
 
       Folder updatedFolder = folderRepository.save(folder);
       return mapToDto(updatedFolder);
@@ -65,6 +77,7 @@ public class FolderServiceImpl implements FolderService {
       FolderDto folderDto = new FolderDto();
       folderDto.setId(folder.getId());
       folderDto.setTitle(folder.getTitle());
+      folderDto.setDepartment(folder.getDepartment());
       folderDto.setCreatedAt(folder.getCreatedAt());
       folderDto.setUpdatedAt(folder.getUpdatedAt());
       return folderDto;
@@ -73,6 +86,7 @@ public class FolderServiceImpl implements FolderService {
    private Folder mapToEntity(FolderDto folderDto) {
       Folder folder = new Folder();
       folder.setTitle(folderDto.getTitle());
+      folder.setDepartment(folderDto.getDepartment());
       return folder;
    }
 }

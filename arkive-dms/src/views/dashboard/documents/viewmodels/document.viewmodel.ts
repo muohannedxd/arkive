@@ -20,7 +20,10 @@ export default function useDocument() {
   
   // Get user information from auth store to determine department
   const { user } = useAuthStore();
-  const userDepartment = user?.department || "";
+  // Get the primary department name (first one) or an empty string if no departments
+  const userDepartment = user?.departments && user.departments.length > 0 
+    ? user.departments[0].name 
+    : "";
 
   const fetchDocuments = useCallback(async () => {
     setIsLoading(true);

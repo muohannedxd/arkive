@@ -31,9 +31,15 @@ public class Document {
 
     @Column(name = "url")
     private String url;
+    
+    @Column(name = "owner_id")
+    private Long ownerId;
+    
+    @Column(name = "owner_name")
+    private String ownerName;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "folder_id")
+    @JoinColumn(name = "folder_id", nullable = true)
     private Folder folder;
 
     @CreationTimestamp

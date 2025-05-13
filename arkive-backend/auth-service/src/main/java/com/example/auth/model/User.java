@@ -3,6 +3,7 @@ package com.example.auth.model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -13,7 +14,8 @@ public class User {
    private String email;
    private String role;
    private String position;
-   private String department;
+   // Replace single department with a list of departments
+   private List<Department> departments;
    private String phone;
    private String status;
    private String hire_date;

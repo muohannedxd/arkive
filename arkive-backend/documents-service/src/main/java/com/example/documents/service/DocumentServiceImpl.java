@@ -82,12 +82,15 @@ public class DocumentServiceImpl implements DocumentService {
          documentDto.setUrl("no-file-attached");
       }
 
-      // Check if folder exists
-      Folder folder = folderRepository.findById(documentDto.getFolderId())
-            .orElseThrow(() -> new BadRequestException("Folder not found with id: " + documentDto.getFolderId()));
-
       Document document = mapToEntity(documentDto);
-      document.setFolder(folder);
+      
+      // Only set folder if folderId is provided
+      if (documentDto.getFolderId() != null) {
+         // Check if folder exists
+         Folder folder = folderRepository.findById(documentDto.getFolderId())
+               .orElseThrow(() -> new BadRequestException("Folder not found with id: " + documentDto.getFolderId()));
+         document.setFolder(folder);
+      }
 
       Document savedDocument = documentRepository.save(document);
       return mapToDto(savedDocument);
@@ -100,9 +103,15 @@ public class DocumentServiceImpl implements DocumentService {
          throw new BadRequestException("File cannot be empty");
       }
       
-      // Check if folder exists
-      Folder folder = folderRepository.findById(documentDto.getFolderId())
-            .orElseThrow(() -> new BadRequestException("Folder not found with id: " + documentDto.getFolderId()));
+      Document document = mapToEntity(documentDto);
+      
+      // Only set folder if folderId is provided
+      if (documentDto.getFolderId() != null) {
+         // Check if folder exists
+         Folder folder = folderRepository.findById(documentDto.getFolderId())
+               .orElseThrow(() -> new BadRequestException("Folder not found with id: " + documentDto.getFolderId()));
+         document.setFolder(folder);
+      }
             
       try {
          // Upload the file to storage service
@@ -110,10 +119,7 @@ public class DocumentServiceImpl implements DocumentService {
          log.info("File uploaded successfully with name: {}", filename);
          
          // Set the document URL to the uploaded file's URL
-         documentDto.setUrl(filename);
-         
-         Document document = mapToEntity(documentDto);
-         document.setFolder(folder);
+         document.setUrl(filename);
          
          Document savedDocument = documentRepository.save(document);
          return mapToDto(savedDocument);
@@ -157,16 +163,32 @@ public class DocumentServiceImpl implements DocumentService {
       Document document = documentRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Document not found with id: " + id));
 
-      // Check if folder exists if it's being updated
-      if (!document.getFolder().getId().equals(documentDto.getFolderId())) {
-         Folder newFolder = folderRepository.findById(documentDto.getFolderId())
-               .orElseThrow(() -> new BadRequestException("Folder not found with id: " + documentDto.getFolderId()));
-         document.setFolder(newFolder);
+      // Handle folder assignment/reassignment
+      if (documentDto.getFolderId() != null) {
+         // If the document didn't have a folder or folder is being changed
+         if (document.getFolder() == null || !document.getFolder().getId().equals(documentDto.getFolderId())) {
+            // Check if new folder exists
+            Folder newFolder = folderRepository.findById(documentDto.getFolderId())
+                  .orElseThrow(() -> new BadRequestException("Folder not found with id: " + documentDto.getFolderId()));
+            document.setFolder(newFolder);
+         }
+      } else {
+         // If folderId is null in the request, remove folder association
+         document.setFolder(null);
       }
 
       document.setTitle(documentDto.getTitle());
       document.setCategory(documentDto.getCategory());
       document.setDepartment(documentDto.getDepartment());
+
+      // Only update owner information if provided
+      if (documentDto.getOwnerId() != null) {
+         document.setOwnerId(documentDto.getOwnerId());
+      }
+      
+      if (documentDto.getOwnerName() != null && !documentDto.getOwnerName().isEmpty()) {
+         document.setOwnerName(documentDto.getOwnerName());
+      }
 
       // Only update URL if provided and not empty
       if (documentDto.getUrl() != null && !documentDto.getUrl().isEmpty()) {
@@ -209,7 +231,14 @@ public class DocumentServiceImpl implements DocumentService {
       documentDto.setCategory(document.getCategory());
       documentDto.setDepartment(document.getDepartment());
       documentDto.setUrl(document.getUrl());
-      documentDto.setFolderId(document.getFolder().getId());
+      documentDto.setOwnerId(document.getOwnerId());
+      documentDto.setOwnerName(document.getOwnerName());
+      
+      // Only set the folderId if the document has a folder
+      if (document.getFolder() != null) {
+         documentDto.setFolderId(document.getFolder().getId());
+      }
+      
       documentDto.setCreatedAt(document.getCreatedAt());
       documentDto.setUpdatedAt(document.getUpdatedAt());
       return documentDto;
@@ -221,6 +250,8 @@ public class DocumentServiceImpl implements DocumentService {
       document.setCategory(documentDto.getCategory());
       document.setDepartment(documentDto.getDepartment());
       document.setUrl(documentDto.getUrl());
+      document.setOwnerId(documentDto.getOwnerId());
+      document.setOwnerName(documentDto.getOwnerName());
       return document;
    }
 }

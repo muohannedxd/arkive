@@ -5,7 +5,7 @@ export interface UserObject {
    phone: string;
    password: string;
    role: string;
-   department: string;
+   departments: Array<{ id: number, name: string }>;  // Updated from department to departments array
    position: string;
    status: string;
    hire_date: Date;
@@ -22,7 +22,7 @@ export type UserRowObj = {
    phone: string;
    role: string;
    position: string;
-   department: string;
+   departments: Array<{ id: number, name: string }>;  // Updated from department to departments array
    status: string;
    hire_date: string;
  };

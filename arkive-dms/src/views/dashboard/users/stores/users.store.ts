@@ -52,7 +52,7 @@ export const useUserStore = create<UserStore>((set) => ({
     phone: "",
     password: "",
     role: "User",
-    department: "Information Technology",
+    departments: [], // Changed from department to departments array
     position: "",
     status: "Active",
     hire_date: new Date(),
@@ -66,7 +66,7 @@ export const useUserStore = create<UserStore>((set) => ({
         phone: "",
         password: "",
         role: "User",
-        department: "Information Technology",
+        departments: [], // Changed from department to departments array
         position: "",
         status: "Active",
         hire_date: new Date(),

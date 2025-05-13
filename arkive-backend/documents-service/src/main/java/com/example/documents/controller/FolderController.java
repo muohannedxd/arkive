@@ -24,6 +24,12 @@ public class FolderController {
         return ResponseEntity.ok(ApiResponse.success("Folders retrieved successfully", folders));
     }
 
+    @GetMapping("/department/{department}")
+    public ResponseEntity<ApiResponse<List<FolderDto>>> getFoldersByDepartment(@PathVariable String department) {
+        List<FolderDto> folders = folderService.getFoldersByDepartment(department);
+        return ResponseEntity.ok(ApiResponse.success("Department folders retrieved successfully", folders));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<FolderDto>> getFolderById(@PathVariable Long id) {
         FolderDto folder = folderService.getFolderById(id);

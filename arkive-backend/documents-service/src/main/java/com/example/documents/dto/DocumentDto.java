@@ -1,7 +1,6 @@
 package com.example.documents.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -24,8 +23,12 @@ public class DocumentDto {
     
     private String url;
     
-    @NotNull(message = "Folder ID is required")
+    // No longer required - documents can exist outside folders
     private Long folderId;
+    
+    private Long ownerId;
+    
+    private String ownerName;
     
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

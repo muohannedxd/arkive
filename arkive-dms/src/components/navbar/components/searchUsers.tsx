@@ -1,12 +1,16 @@
 import { FiFilter, FiSearch } from "react-icons/fi";
 import { useUserStore } from "../../../views/dashboard/users/stores/users.store";
-import { departments, roles, statuses } from "lib/configData";
+import { roles, statuses } from "lib/configData";
 import Dropdown from "components/dropdown";
 import { useState } from "react";
 import { Button, Select } from "@chakra-ui/react";
+import useDepartments from "views/dashboard/users/viewmodels/departments.viewmodel";
 
 export default function SearchUsers() {
   const { setUserSearchKey, userFilters, setUserFilters } = useUserStore();
+  // Use the departments from the viewmodel instead of static list
+  const { departments: departmentsList } = useDepartments();
+  
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUserSearchKey(e.target.value);
   };
@@ -73,8 +77,8 @@ export default function SearchUsers() {
                 placeholder="Select department"
                 borderRadius="lg"
               >
-                {departments.map((dep) => (
-                  <option key={dep}>{dep}</option>
+                {departmentsList.map((dep) => (
+                  <option key={dep.id} value={dep.name}>{dep.name}</option>
                 ))}
               </Select>
               <Button onClick={() => setUserFilters({})}>Clear Filters</Button>

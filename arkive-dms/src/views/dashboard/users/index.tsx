@@ -147,16 +147,31 @@ export default function Users() {
         </p>
       ),
     }),
-    columnHelper.accessor("department", {
-      id: "department",
+    columnHelper.accessor("departments", {
+      id: "departments",
       header: () => (
-        <p className="text-sm font-bold text-gray-600 ">DEPARTMENT</p>
+        <p className="text-sm font-bold text-gray-600 ">DEPARTMENTS</p>
       ),
-      cell: (info: { getValue: () => ReactNode }) => (
-        <p className="text-sm font-semibold text-navy-700 md:text-base ">
-          {info.getValue()}
-        </p>
-      ),
+      cell: (info: { getValue: () => Array<{id: number, name: string}> }) => {
+        const departments = info.getValue() || [];
+        return (
+          <div className="flex flex-wrap gap-1">
+            {departments.length > 0 ? (
+              departments.map((dept, index) => (
+                <Badge 
+                  key={dept.id} 
+                  colorScheme="blue" 
+                  className="mr-1 mb-1"
+                >
+                  {dept.name}
+                </Badge>
+              ))
+            ) : (
+              <p className="text-sm font-semibold text-gray-500">None</p>
+            )}
+          </div>
+        );
+      },
     }),
     columnHelper.accessor("status", {
       id: "progress",

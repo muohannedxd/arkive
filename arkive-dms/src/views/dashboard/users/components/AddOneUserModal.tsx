@@ -14,6 +14,10 @@ import {
   InputRightElement,
   Spinner,
   useToast,
+  Checkbox,
+  CheckboxGroup,
+  Stack,
+  Box,
 } from "@chakra-ui/react";
 import { Datepicker } from "components/datepicker/Datepicker";
 import { useState, useEffect } from "react";
@@ -64,6 +68,17 @@ export default function AddOneUserModal({
    */
   const handleDateChange = (date: Date) => {
     setOneUserForm("hire_date", date);
+  };
+
+  /**
+   * Handle department selection
+   */
+  const handleDepartmentChange = (deptId: number, checked: boolean) => {
+    const updatedDepartments = checked 
+      ? [...oneUserForm.departments, departments.find(d => d.id === deptId)!]
+      : oneUserForm.departments.filter(d => d.id !== deptId);
+    
+    setOneUserForm("departments", updatedDepartments);
   };
 
   /**
@@ -168,21 +183,24 @@ export default function AddOneUserModal({
                 </Select>
               </FormControl>
             </div>
-            <div className="flex flex-col justify-between gap-4 md:flex-row">
-              <FormControl id="department" isRequired>
-                <FormLabel>Department</FormLabel>
-                <Select
-                  value={oneUserForm.department}
-                  onChange={(e) => setOneUserForm("department", e.target.value)}
-                  placeholder="Select department"
-                  borderRadius="lg"
-                >
-                  {departments.map((dept) => (
-                    <option key={dept.id} value={dept.name}>
-                      {dept.name}
-                    </option>
-                  ))}
-                </Select>
+            <div className="flex flex-col justify-between gap-4">
+              <FormControl id="departments" isRequired>
+                <FormLabel>Departments (Select multiple)</FormLabel>
+                <Box maxH="150px" overflowY="auto" border="1px solid" borderColor="gray.200" borderRadius="lg" p={3}>
+                  <CheckboxGroup>
+                    <Stack spacing={2}>
+                      {departments.map((dept) => (
+                        <Checkbox 
+                          key={dept.id} 
+                          isChecked={oneUserForm.departments.some(d => d.id === dept.id)}
+                          onChange={(e) => handleDepartmentChange(dept.id, e.target.checked)}
+                        >
+                          {dept.name}
+                        </Checkbox>
+                      ))}
+                    </Stack>
+                  </CheckboxGroup>
+                </Box>
               </FormControl>
               <FormControl id="position" isRequired>
                 <FormLabel>Position</FormLabel>

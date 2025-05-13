@@ -16,6 +16,9 @@ public class FolderDto {
     @NotBlank(message = "Folder title cannot be blank")
     private String title;
     
+    @NotBlank(message = "Department cannot be blank")
+    private String department;
+    
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -24,6 +24,9 @@ public class Folder {
 
     @Column(name = "title", nullable = false)
     private String title;
+    
+    @Column(name = "department", nullable = false)
+    private String department;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

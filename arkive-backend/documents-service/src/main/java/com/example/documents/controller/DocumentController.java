@@ -55,13 +55,17 @@ public class DocumentController {
             @RequestParam("title") String title,
             @RequestParam("department") String department,
             @RequestParam(value = "category", required = false) String category,
-            @RequestParam("folderId") Long folderId) {
+            @RequestParam(value = "folderId", required = false) Long folderId,
+            @RequestParam("ownerId") Long ownerId,
+            @RequestParam("ownerName") String ownerName) {
         
         DocumentDto documentDto = new DocumentDto();
         documentDto.setTitle(title);
         documentDto.setDepartment(department);
         documentDto.setCategory(category);
         documentDto.setFolderId(folderId);
+        documentDto.setOwnerId(ownerId);
+        documentDto.setOwnerName(ownerName);
         
         DocumentDto createdDocument = documentService.uploadDocument(file, documentDto);
         return new ResponseEntity<>(ApiResponse.success("Document created successfully", createdDocument), HttpStatus.CREATED);

@@ -6,6 +6,8 @@ import java.util.List;
 
 public interface FolderService {
    List<FolderDto> getAllFolders();
+   
+   List<FolderDto> getFoldersByDepartment(String department);
 
    FolderDto getFolderById(Long id);
 

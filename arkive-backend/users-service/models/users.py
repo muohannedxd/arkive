@@ -3,6 +3,11 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from database import db
 
+# Association table for many-to-many relationship between users and departments
+user_departments = db.Table('user_departments',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('department_id', db.Integer, db.ForeignKey('departments.id'), primary_key=True)
+)
 
 class User(UserMixin, db.Model):
     __tablename__ = "users"
@@ -12,8 +17,12 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.Text)
     role = db.Column(db.String(20), nullable=False, default="User")
     position = db.Column(db.String(100))
-    department_id = db.Column(db.Integer, db.ForeignKey("departments.id"), nullable=True)
-    department = db.relationship("Department", back_populates="users")
+    # Remove the single department foreign key
+    # department_id = db.Column(db.Integer, db.ForeignKey("departments.id"), nullable=True)
+    # department = db.relationship("Department", back_populates="users")
+    # Add many-to-many relationship
+    departments = db.relationship('Department', secondary=user_departments, 
+                               backref=db.backref('users', lazy='dynamic'))
     phone = db.Column(db.String(50))
     status = db.Column(db.String(50), default="Active")
     hire_date = db.Column(db.Date, default=datetime.utcnow)
@@ -51,7 +60,7 @@ class User(UserMixin, db.Model):
             "email": self.email,
             "role": self.role,
             "position": self.position,
-            "department": self.department.name if self.department else None,
+            "departments": [dept.to_dict() for dept in self.departments],
             "phone": self.phone,
             "status": self.status,
             "hire_date": (
@@ -66,6 +75,10 @@ class User(UserMixin, db.Model):
 
 def apply_filter(user, key, value):
     """Apply a single filter to a user dictionary"""
+    if key == "department" and isinstance(user, dict) and "departments" in user:
+        # Check if any of the user's departments match the filter value
+        return any(dept["name"] == value for dept in user["departments"])
+    
     if isinstance(user, dict):
         return user.get(key) == value
     return getattr(user, key, None) == value

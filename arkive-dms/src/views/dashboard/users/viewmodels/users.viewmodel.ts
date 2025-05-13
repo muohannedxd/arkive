@@ -51,12 +51,12 @@ export default function useUsers() {
         },
       });
       
-      const transformedData: UserRowObj[] = response.data.data.map((user: UserObject) => ({
+      const transformedData: UserRowObj[] = response.data.data.map((user: any) => ({
         personal: [user.name, user.email, user.id],
         phone: user.phone,
         role: user.role,
         position: user.position,
-        department: user.department,
+        departments: user.departments || [], // Updated to use departments array
         status: user.status,
         hire_date: user.hire_date,
       }));
@@ -109,12 +109,12 @@ export default function useUsers() {
     setFormSuccess("");
     
     try {
-      const selectedDepartmentName = oneUserForm.department;
-      const selectedDepartment = departments.find(dept => dept.name === selectedDepartmentName);
+      // Extract department IDs from the selected departments
+      const departmentIds = oneUserForm.departments.map(dept => dept.id);
       
       const userData = {
         ...oneUserForm,
-        department_id: selectedDepartment ? selectedDepartment.id : null,
+        department_ids: departmentIds, // Send array of department IDs
         hire_date: oneUserForm.hire_date instanceof Date 
           ? oneUserForm.hire_date.toISOString().split('T')[0] 
           : oneUserForm.hire_date
@@ -200,8 +200,12 @@ export default function useUsers() {
     setFormSuccess("");
     
     try {
+      // Extract department IDs from the selected departments
+      const departmentIds = oneUserForm.departments.map(dept => dept.id);
+      
       const userData = {
         ...oneUserForm,
+        department_ids: departmentIds, // Send array of department IDs
         hire_date: oneUserForm.hire_date instanceof Date 
           ? oneUserForm.hire_date.toISOString().split('T')[0] 
           : oneUserForm.hire_date

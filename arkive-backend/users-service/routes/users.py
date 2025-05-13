@@ -99,7 +99,7 @@ def create_user():
         password = data.get("password")
         role = data.get("role", "User")
         position = data.get("position")
-        department_id = data.get("department_id")
+        department_ids = data.get("department_ids", [])  # Get array of department IDs
         phone = data.get("phone")
         status = data.get("status", "Active")
         hire_date_str = data.get("hire_date")
@@ -110,10 +110,6 @@ def create_user():
         # Check if user with this email already exists
         if User.query.filter_by(email=email).first():
             return jsonify({"status": "error", "message": "User with this email already exists."}), 409
-
-        # Check if department_id exists
-        if department_id and not Department.query.get(department_id):
-            return jsonify({"status": "error", "message": "Invalid department ID."}), 400
 
         hire_date = None
         if hire_date_str:
@@ -128,11 +124,17 @@ def create_user():
             password=password,
             role=role,
             position=position,
-            department_id=department_id,  # Set department_id
             phone=phone,
             status=status,
             hire_date=hire_date
         )
+
+        # Add departments to the user
+        if department_ids:
+            departments = Department.query.filter(Department.id.in_(department_ids)).all()
+            if len(departments) != len(department_ids):
+                return jsonify({"status": "error", "message": "One or more department IDs are invalid."}), 400
+            user.departments = departments
 
         db.session.add(user)
         db.session.commit()
@@ -141,9 +143,10 @@ def create_user():
 
     except IntegrityError as e:
         db.session.rollback()
-        return jsonify({"status": "error", "message": "Integrity error occurred. Email must be unique or department ID might be invalid."}), 409
+        return jsonify({"status": "error", "message": "Integrity error occurred. Email must be unique."}), 409
 
     except Exception as e:
+        db.session.rollback()
         print(f"Error in create_user: {str(e)}")
         return jsonify({"status": "error", "message": "An unexpected error occurred while creating the user."}), 500
 
@@ -183,9 +186,17 @@ def update_user(user_id):
             user.password_hash = generate_password_hash(data["password"])
         user.role = data.get("role", user.role)
         user.position = data.get("position", user.position)
-        user.department_id = data.get("department_id", user.department_id)
         user.phone = data.get("phone", user.phone)
         user.status = data.get("status", user.status)
+
+        # Update departments if provided
+        department_ids = data.get("department_ids")
+        if department_ids is not None:
+            # Clear existing departments and add new ones
+            departments = Department.query.filter(Department.id.in_(department_ids)).all()
+            if len(departments) != len(department_ids):
+                return jsonify({"status": "error", "message": "One or more department IDs are invalid."}), 400
+            user.departments = departments
 
         hire_date_str = data.get("hire_date")
         if hire_date_str:
