@@ -67,14 +67,14 @@ export default function FileCard(props: FileInterface) {
             {isImage && !previewError ? (
               <img
                 src={documentUrl}
-                className="mb-3 max-h-56 w-full rounded-md border-2 border-gray-100 sm:max-h-52 md:max-h-48 object-contain"
+                className="mb-3 min-h-48 max-h-56 w-full rounded-md border-2 border-gray-100 sm:max-h-52 md:max-h-48 object-contain"
                 alt={title}
                 onError={handleImageError}
               />
             ) : isPdf && !previewError ? (
               <PdfPreview 
                 pdfUrl={documentUrl} 
-                // onError={() => setPreviewError(true)}
+                onError={() => setPreviewError(true)}
               />
             ) : previewError ? (
               // Display error state if preview failed
