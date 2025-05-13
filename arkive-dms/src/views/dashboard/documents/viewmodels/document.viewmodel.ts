@@ -92,7 +92,7 @@ export default function useDocument() {
     } finally {
       setIsLoading(false);
     }
-  }, [documentFilters, documentSearchKey, setDocumentsData, userDepartment, toast, user?.departments]);
+  }, [documentFilters, documentSearchKey, setDocumentsData, toast, user?.departments]);
 
   useEffect(() => {
     fetchDocuments();
