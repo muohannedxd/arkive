@@ -1,5 +1,5 @@
 import { useDisclosure } from "@chakra-ui/hooks";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useFolderStore } from "../stores/folder.store";
 import { FolderObject } from "types/document";
 import axiosClient from "lib/axios";
@@ -11,17 +11,20 @@ export default function useFolders() {
   // State for create/edit folder form
   const [folderTitle, setFolderTitle] = useState("");
   const [editFolderId, setEditFolderId] = useState<number | null>(null);
-  const [editFolderDepartment, setEditFolderDepartment] = useState<string>("");
+  const [folderDepartments, setFolderDepartments] = useState<string[]>([]);
 
   // Toast for notifications
   const toast = useToast();
   
-  // Get user information from auth store to determine department
+  // Get user information from auth store to determine departments
   const { user } = useAuthStore();
-  // Get the primary department (first one) or an empty string if no departments
-  const userDepartment = user?.departments && user.departments.length > 0 
-    ? user.departments[0].name 
-    : "";
+  
+  // Get all user departments
+  const userDepartments = useMemo(() => (
+    user?.departments && user.departments.length > 0 
+      ? user.departments.map(dept => dept.name) 
+      : []
+  ), [user?.departments]);
 
   // Get folder store data and actions
   const {
@@ -42,14 +45,43 @@ export default function useFolders() {
     setIsLoading(true);
     setError(null);
     try {
-      // Use the department-specific endpoint if user has a department
-      const endpoint = userDepartment 
-        ? `/folders/department/${encodeURIComponent(userDepartment)}`
-        : "/folders";
+      let response;
+      
+      if (userDepartments.length > 0) {
+        console.log("User departments:", userDepartments);
         
-      const response = await axiosClient.get(endpoint);
+        // Build departments query with proper encoding
+        const departmentsQuery = userDepartments
+          .map(dept => `departments=${encodeURIComponent(dept)}`)
+          .join('&');
+        
+        const url = `/folders/departments?${departmentsQuery}`;
+        console.log("Fetching folders with URL:", url);
+        
+        response = await axiosClient.get(url);
+        console.log("Response from departments endpoint:", response.data);
+      } else {
+        // Fallback to regular folders endpoint if no departments
+        response = await axiosClient.get("/folders");
+        console.log("Response from general folders endpoint:", response.data);
+      }
+      
       if (response.data?.data) {
-        setFoldersData(response.data.data);
+        // Process and log each folder to help with debugging
+        const folders = response.data.data;
+        console.log(`Received ${folders.length} folders from API:`, folders);
+        
+        folders.forEach((folder: FolderObject) => {
+          console.log(`Folder ${folder.id}: ${folder.title}`, {
+            departments: folder.departments || [],
+            createdAt: folder.createdAt
+          });
+        });
+        
+        setFoldersData(folders);
+      } else {
+        console.log("No folders data in response");
+        setFoldersData([]);
       }
     } catch (err: any) {
       console.error("Error fetching folders:", err);
@@ -57,9 +89,9 @@ export default function useFolders() {
     } finally {
       setIsLoading(false);
     }
-  }, [setFoldersData, setIsLoading, setError, userDepartment]);
+  }, [setFoldersData, setIsLoading, setError, userDepartments]);
 
-  // Fetch folders on component mount
+  // Fetch folders on component mount or when user departments change
   useEffect(() => {
     fetchFolders();
   }, [fetchFolders]);
@@ -82,7 +114,7 @@ export default function useFolders() {
   const clearCreateFolderForm = () => {
     setFolderTitle("");
     setEditFolderId(null);
-    setEditFolderDepartment("");
+    setFolderDepartments([]);
   };
 
   /**
@@ -100,8 +132,8 @@ export default function useFolders() {
       return;
     }
     
-    // Ensure user has a department before creating folders
-    if (!userDepartment && !editFolderId) {
+    // Ensure user has at least one department before creating folders
+    if (userDepartments.length === 0 && !editFolderId) {
       toast({
         title: "Department Required",
         description: "You must be associated with a department to create folders",
@@ -119,7 +151,7 @@ export default function useFolders() {
         // Update existing folder
         await axiosClient.put(`/folders/${editFolderId}`, {
           title: folderTitle.trim(),
-          department: editFolderDepartment || userDepartment
+          departments: folderDepartments.length > 0 ? folderDepartments : userDepartments
         });
         
         toast({
@@ -130,10 +162,10 @@ export default function useFolders() {
           isClosable: true,
         });
       } else {
-        // Create new folder with department
+        // Create new folder with all user's departments
         await axiosClient.post("/folders", {
           title: folderTitle.trim(),
-          department: userDepartment
+          departments: userDepartments
         });
         
         toast({
@@ -210,7 +242,7 @@ export default function useFolders() {
   const startEditFolder = (folder: FolderObject) => {
     setFolderTitle(folder.title);
     setEditFolderId(folder.id);
-    setEditFolderDepartment(folder.department);
+    setFolderDepartments(folder.departments || []);
     onOpenEditFolderModal();
   };
 
@@ -273,7 +305,8 @@ export default function useFolders() {
     clearCreateFolderForm,
     handleSubmit,
     editFolderId,
-    editFolderDepartment,
+    folderDepartments,
+    setFolderDepartments,
     
     // Navigation
     currentFolderId,
@@ -304,6 +337,6 @@ export default function useFolders() {
     fetchFolders,
     
     // User info
-    userDepartment,
+    userDepartments,
   };
 }

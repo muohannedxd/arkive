@@ -10,6 +10,12 @@ import {
   FormLabel,
   Input,
   Text,
+  Box,
+  Tag,
+  TagLabel,
+  TagCloseButton,
+  Wrap,
+  WrapItem,
 } from "@chakra-ui/react";
 
 interface EditFolderModalProps {
@@ -19,7 +25,9 @@ interface EditFolderModalProps {
   setFolderTitle: (title: string) => void;
   handleSubmit: () => void;
   isLoading: boolean;
-  department?: string;
+  folderDepartments: string[];
+  setFolderDepartments: (departments: string[]) => void;
+  userDepartments: string[];
 }
 
 export default function EditFolderModal({
@@ -29,11 +37,25 @@ export default function EditFolderModal({
   setFolderTitle,
   handleSubmit,
   isLoading,
-  department,
+  folderDepartments = [],
+  setFolderDepartments,
+  userDepartments = [],
 }: EditFolderModalProps) {
   const handleSave = () => {
     handleSubmit();
     onClose();
+  };
+  
+  // Add a department from user departments to the folder
+  const addDepartment = (dept: string) => {
+    if (!folderDepartments.includes(dept)) {
+      setFolderDepartments([...folderDepartments, dept]);
+    }
+  };
+  
+  // Remove a department from the folder
+  const removeDepartment = (dept: string) => {
+    setFolderDepartments(folderDepartments.filter(d => d !== dept));
   };
 
   return (
@@ -44,12 +66,6 @@ export default function EditFolderModal({
         <ModalCloseButton />
         <ModalBody className="z-10">
           <div className="z-10 flex flex-col gap-4">
-            {department && (
-              <div>
-                <Text className="font-semibold mb-1">Department</Text>
-                <Text className="text-sm text-gray-600">{department}</Text>
-              </div>
-            )}
             <div>
               <FormControl id="folder-title" isRequired>
                 <FormLabel>Folder Title</FormLabel>
@@ -61,6 +77,50 @@ export default function EditFolderModal({
                 />
               </FormControl>
             </div>
+            
+            <div>
+              <FormLabel>Departments</FormLabel>
+              <Box mb={3}>
+                <Wrap spacing={2}>
+                  {folderDepartments.map((dept, index) => (
+                    <WrapItem key={index}>
+                      <Tag size="md" colorScheme="blue" borderRadius="full" variant="solid">
+                        <TagLabel>{dept}</TagLabel>
+                        <TagCloseButton onClick={() => removeDepartment(dept)} />
+                      </Tag>
+                    </WrapItem>
+                  ))}
+                </Wrap>
+                {folderDepartments.length === 0 && (
+                  <Text fontSize="sm" color="gray.500">No departments assigned</Text>
+                )}
+              </Box>
+              
+              {userDepartments.length > 0 && (
+                <Box mt={2}>
+                  <Text fontSize="sm" fontWeight="medium" mb={1}>Add department:</Text>
+                  <Wrap spacing={2}>
+                    {userDepartments
+                      .filter(dept => !folderDepartments.includes(dept))
+                      .map((dept, index) => (
+                        <WrapItem key={index}>
+                          <Tag 
+                            size="md" 
+                            colorScheme="gray" 
+                            borderRadius="full" 
+                            cursor="pointer"
+                            onClick={() => addDepartment(dept)}
+                          >
+                            <TagLabel>{dept}</TagLabel>
+                            <Box as="span" ml={1}>+</Box>
+                          </Tag>
+                        </WrapItem>
+                      ))}
+                  </Wrap>
+                </Box>
+              )}
+            </div>
+            
             <div className="my-4 md:my-6">
               <Button
                 onClick={handleSave}

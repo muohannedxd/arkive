@@ -4,6 +4,7 @@ import com.example.documents.client.StorageClient;
 import com.example.documents.dto.DocumentDto;
 import com.example.documents.exception.BadRequestException;
 import com.example.documents.exception.ResourceNotFoundException;
+import com.example.documents.model.Department;
 import com.example.documents.model.Document;
 import com.example.documents.model.Folder;
 import com.example.documents.repository.DocumentRepository;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,6 +31,7 @@ public class DocumentServiceImpl implements DocumentService {
    private final DocumentRepository documentRepository;
    private final FolderRepository folderRepository;
    private final StorageClient storageClient;
+   private final DepartmentService departmentService;
 
    @Override
    public List<DocumentDto> getAllDocuments() {
@@ -53,6 +56,18 @@ public class DocumentServiceImpl implements DocumentService {
    @Override
    public List<DocumentDto> getDocumentsByDepartment(String department) {
       List<Document> documents = documentRepository.findByDepartment(department);
+      return documents.stream()
+            .map(this::mapToDto)
+            .collect(Collectors.toList());
+   }
+   
+   @Override
+   public List<DocumentDto> getDocumentsByDepartments(List<String> departmentNames) {
+      if (departmentNames == null || departmentNames.isEmpty()) {
+          return new ArrayList<>();
+      }
+      
+      List<Document> documents = documentRepository.findByDepartmentNames(departmentNames);
       return documents.stream()
             .map(this::mapToDto)
             .collect(Collectors.toList());
@@ -84,6 +99,18 @@ public class DocumentServiceImpl implements DocumentService {
 
       Document document = mapToEntity(documentDto);
       
+      // For backward compatibility, if departments list is empty but department string is set
+      if ((documentDto.getDepartments() == null || documentDto.getDepartments().isEmpty()) 
+          && documentDto.getDepartment() != null) {
+          documentDto.setDepartments(List.of(documentDto.getDepartment()));
+      }
+      
+      // Set the departments for the document
+      if (documentDto.getDepartments() != null && !documentDto.getDepartments().isEmpty()) {
+          List<Department> departments = departmentService.findOrCreateDepartments(documentDto.getDepartments());
+          document.getDepartments().addAll(departments);
+      }
+      
       // Only set folder if folderId is provided
       if (documentDto.getFolderId() != null) {
          // Check if folder exists
@@ -104,6 +131,18 @@ public class DocumentServiceImpl implements DocumentService {
       }
       
       Document document = mapToEntity(documentDto);
+      
+      // For backward compatibility, if departments list is empty but department string is set
+      if ((documentDto.getDepartments() == null || documentDto.getDepartments().isEmpty()) 
+          && documentDto.getDepartment() != null) {
+          documentDto.setDepartments(List.of(documentDto.getDepartment()));
+      }
+      
+      // Set the departments for the document
+      if (documentDto.getDepartments() != null && !documentDto.getDepartments().isEmpty()) {
+          List<Department> departments = departmentService.findOrCreateDepartments(documentDto.getDepartments());
+          document.getDepartments().addAll(departments);
+      }
       
       // Only set folder if folderId is provided
       if (documentDto.getFolderId() != null) {
@@ -179,7 +218,19 @@ public class DocumentServiceImpl implements DocumentService {
 
       document.setTitle(documentDto.getTitle());
       document.setCategory(documentDto.getCategory());
-      document.setDepartment(documentDto.getDepartment());
+      document.setDepartment(documentDto.getDepartment()); // Keep for backward compatibility
+      
+      // Handle department updates if provided
+      if (documentDto.getDepartments() != null && !documentDto.getDepartments().isEmpty()) {
+          document.getDepartments().clear();
+          List<Department> departments = departmentService.findOrCreateDepartments(documentDto.getDepartments());
+          document.getDepartments().addAll(departments);
+          
+          // Update single department field for backward compatibility
+          if (!documentDto.getDepartments().isEmpty()) {
+              document.setDepartment(documentDto.getDepartments().get(0));
+          }
+      }
 
       // Only update owner information if provided
       if (documentDto.getOwnerId() != null) {
@@ -234,6 +285,15 @@ public class DocumentServiceImpl implements DocumentService {
       documentDto.setOwnerId(document.getOwnerId());
       documentDto.setOwnerName(document.getOwnerName());
       
+      // Map departments
+      if (document.getDepartments() != null) {
+          documentDto.setDepartments(
+              document.getDepartments().stream()
+                  .map(Department::getName)
+                  .collect(Collectors.toList())
+          );
+      }
+      
       // Only set the folderId if the document has a folder
       if (document.getFolder() != null) {
          documentDto.setFolderId(document.getFolder().getId());
@@ -248,7 +308,7 @@ public class DocumentServiceImpl implements DocumentService {
       Document document = new Document();
       document.setTitle(documentDto.getTitle());
       document.setCategory(documentDto.getCategory());
-      document.setDepartment(documentDto.getDepartment());
+      document.setDepartment(documentDto.getDepartment()); // For backward compatibility
       document.setUrl(documentDto.getUrl());
       document.setOwnerId(documentDto.getOwnerId());
       document.setOwnerName(documentDto.getOwnerName());

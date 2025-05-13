@@ -5,12 +5,14 @@ import com.example.documents.dto.response.ApiResponse;
 import com.example.documents.service.FolderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/folders")
 @RequiredArgsConstructor
@@ -24,10 +26,15 @@ public class FolderController {
         return ResponseEntity.ok(ApiResponse.success("Folders retrieved successfully", folders));
     }
 
-    @GetMapping("/department/{department}")
-    public ResponseEntity<ApiResponse<List<FolderDto>>> getFoldersByDepartment(@PathVariable String department) {
-        List<FolderDto> folders = folderService.getFoldersByDepartment(department);
-        return ResponseEntity.ok(ApiResponse.success("Department folders retrieved successfully", folders));
+    @GetMapping("/departments")
+    public ResponseEntity<ApiResponse<List<FolderDto>>> getFoldersByDepartments(@RequestParam List<String> departments) {
+        log.info("Fetching folders for departments: {}", departments);
+        List<FolderDto> folders = folderService.getFoldersByDepartments(departments);
+        log.info("Found {} folders for departments: {}", folders.size(), departments);
+        for (FolderDto folder : folders) {
+            log.info("Folder: id={}, title={}, departments={}", folder.getId(), folder.getTitle(), folder.getDepartments());
+        }
+        return ResponseEntity.ok(ApiResponse.success("Folders for multiple departments retrieved successfully", folders));
     }
 
     @GetMapping("/{id}")

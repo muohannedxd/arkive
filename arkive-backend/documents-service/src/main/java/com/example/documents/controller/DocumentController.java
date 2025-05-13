@@ -42,6 +42,12 @@ public class DocumentController {
         List<DocumentDto> documents = documentService.getDocumentsByDepartment(department);
         return ResponseEntity.ok(ApiResponse.success("Department Documents retrieved successfully", documents));
     }
+    
+    @GetMapping("/departments")
+    public ResponseEntity<ApiResponse<List<DocumentDto>>> getDocumentsByDepartments(@RequestParam List<String> departments) {
+        List<DocumentDto> documents = documentService.getDocumentsByDepartments(departments);
+        return ResponseEntity.ok(ApiResponse.success("Documents for multiple departments retrieved successfully", documents));
+    }
 
     @GetMapping("/category/{category}")
     public ResponseEntity<ApiResponse<List<DocumentDto>>> getDocumentsByCategory(@PathVariable String category) {
@@ -54,6 +60,7 @@ public class DocumentController {
             @RequestParam("file") MultipartFile file,
             @RequestParam("title") String title,
             @RequestParam("department") String department,
+            @RequestParam(value = "departments", required = false) List<String> departments,
             @RequestParam(value = "category", required = false) String category,
             @RequestParam(value = "folderId", required = false) Long folderId,
             @RequestParam("ownerId") Long ownerId,
@@ -61,7 +68,16 @@ public class DocumentController {
         
         DocumentDto documentDto = new DocumentDto();
         documentDto.setTitle(title);
-        documentDto.setDepartment(department);
+        documentDto.setDepartment(department); // For backward compatibility
+        
+        // Set multiple departments if provided
+        if (departments != null && !departments.isEmpty()) {
+            documentDto.setDepartments(departments);
+        } else {
+            // Use single department as default if multiple departments not provided
+            documentDto.setDepartments(List.of(department));
+        }
+        
         documentDto.setCategory(category);
         documentDto.setFolderId(folderId);
         documentDto.setOwnerId(ownerId);

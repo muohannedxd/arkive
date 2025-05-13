@@ -7,7 +7,10 @@ import java.util.List;
 public interface FolderService {
    List<FolderDto> getAllFolders();
    
-   List<FolderDto> getFoldersByDepartment(String department);
+   // Removed legacy getFoldersByDepartment method
+   
+   // Method to get folders by multiple departments
+   List<FolderDto> getFoldersByDepartments(List<String> departmentNames);
 
    FolderDto getFolderById(Long id);
 

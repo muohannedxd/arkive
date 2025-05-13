@@ -8,6 +8,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "documents")
@@ -26,8 +28,17 @@ public class Document {
     @Column(name = "category")
     private String category;
 
-    @Column(name = "department", nullable = false)
+    // Keep this temporarily for backward compatibility, will be removed after migration
+    @Column(name = "department")
     private String department;
+    
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "document_departments",
+        joinColumns = @JoinColumn(name = "document_id"),
+        inverseJoinColumns = @JoinColumn(name = "department_id")
+    )
+    private Set<Department> departments = new HashSet<>();
 
     @Column(name = "url")
     private String url;

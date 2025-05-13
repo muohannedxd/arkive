@@ -11,7 +11,11 @@ public interface DocumentService {
 
    List<DocumentDto> getDocumentsByFolderId(Long folderId);
 
+   // Keep for backward compatibility
    List<DocumentDto> getDocumentsByDepartment(String department);
+   
+   // New method to get documents by multiple departments
+   List<DocumentDto> getDocumentsByDepartments(List<String> departmentNames);
 
    List<DocumentDto> getDocumentsByCategory(String category);
 

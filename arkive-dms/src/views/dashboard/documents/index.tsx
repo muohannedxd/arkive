@@ -38,8 +38,9 @@ export default function Documents() {
     isOpenDeleteFolderModal,
     onCloseDeleteFolderModal,
     handleConfirmDelete,
-    userDepartment,
-    editFolderDepartment,
+    userDepartments,
+    folderDepartments,
+    setFolderDepartments
   } = useFolders();
 
   // Document hooks
@@ -57,8 +58,8 @@ export default function Documents() {
   // Get current folder details
   const currentFolder = foldersData.find(folder => folder.id === currentFolderId);
 
-  // Check if user has a department associated
-  const canCreateFolder = !!userDepartment;
+  // Check if user has at least one department associated
+  const canCreateFolder = userDepartments.length > 0;
 
   return (
     <div className="mb-6 mt-3 h-full">
@@ -67,7 +68,7 @@ export default function Documents() {
         {currentFolderId ? (
           <FolderContent 
             folderId={currentFolderId} 
-            folderTitle={currentFolder?.title} 
+            folderTitle={currentFolder?.title}
             onBack={navigateBack}
           />
         ) : (
@@ -75,12 +76,19 @@ export default function Documents() {
             {/* Folders */}
             <div className="mb-5 mt-5 flex items-center justify-between">
               <div>
-                <h4 className="text-2xl font-bold text-navy-700">
-                  {canCreateFolder ? 
-                    `Folders (${userDepartment} Department)` : 
-                    'Folders'
-                  }
-                </h4>
+                <h4 className="text-2xl font-bold text-navy-700">Folders</h4>
+                <div className="flex items-center text-sm text-gray-600 mt-1">
+                  {canCreateFolder && (
+                    <div className="flex flex-wrap items-center">
+                      <span className="mr-1">Departments:</span>
+                      {userDepartments.map((dept, i) => (
+                        <span key={i} className="mr-1 italic">
+                          {dept}{i < userDepartments.length - 1 ? "," : ""}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <div className="flex items-center text-sm text-gray-600 mt-1">
                   <BsSortDownAlt className="mr-1" />
                   <Text>Sorted by newest creation date</Text>
@@ -135,13 +143,13 @@ export default function Documents() {
                     key={folder.id}
                     id={folder.id}
                     title={folder.title}
-                    department={folder.department}
+                    departments={folder.departments || []}
                     createdAt={folder.createdAt}
                     onNavigate={navigateToFolder}
                     onEdit={(id, title) => startEditFolder({ 
                       id, 
                       title, 
-                      department: folder.department,
+                      departments: folder.departments || [],
                       createdAt: folder.createdAt, 
                       updatedAt: folder.updatedAt 
                     })}
@@ -196,8 +204,8 @@ export default function Documents() {
                       No Documents Found
                     </p>
                     <p className="text-gray-600 text-center max-w-md">
-                      {userDepartment 
-                        ? `There are no documents in the ${userDepartment} department yet. Click 'Add Document' to upload your first document.`
+                      {userDepartments.length > 0 
+                        ? `There are no documents in your departments yet. Click 'Add Document' to upload your first document.`
                         : "There are no documents to display. Contact your administrator if you need access to documents."
                       }
                     </p>
@@ -245,7 +253,9 @@ export default function Documents() {
         setFolderTitle={setFolderTitle}
         handleSubmit={handleSubmit}
         isLoading={foldersLoading}
-        department={editFolderDepartment}
+        folderDepartments={folderDepartments}
+        setFolderDepartments={setFolderDepartments}
+        userDepartments={userDepartments}
       />
       
       <DeleteFolderModal

@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -18,8 +20,11 @@ public class DocumentDto {
     
     private String category;
     
-    @NotBlank(message = "Department cannot be blank")
+    // Keep for backward compatibility
     private String department;
+    
+    // New field for multiple departments
+    private List<String> departments = new ArrayList<>();
     
     private String url;
     
