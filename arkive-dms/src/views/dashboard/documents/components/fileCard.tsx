@@ -10,7 +10,7 @@ import Card from "components/card";
 import PdfPreview from "components/pdfpreview";
 import DocumentViewer from "./DocumentViewer";
 import { BsThreeDotsVertical, BsEye } from "react-icons/bs";
-import { FiDownload, FiEdit3, FiLock } from "react-icons/fi";
+import { FiDownload, FiEdit3 } from "react-icons/fi";
 import { RiDeleteBin2Line } from "react-icons/ri";
 import { BiError } from "react-icons/bi";
 
@@ -132,9 +132,6 @@ export default function FileCard(props: FileInterface) {
                   </MenuItem>
                   <MenuItem onClick={(e) => e.stopPropagation()} icon={<FiEdit3 />}>
                     Edit File
-                  </MenuItem>
-                  <MenuItem onClick={(e) => e.stopPropagation()} icon={<FiLock />}>
-                    Manage Access
                   </MenuItem>
                   <MenuItem color="red.600" onClick={(e) => e.stopPropagation()} icon={<RiDeleteBin2Line />}>
                     Delete File

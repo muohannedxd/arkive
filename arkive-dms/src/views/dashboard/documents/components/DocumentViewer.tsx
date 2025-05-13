@@ -42,9 +42,55 @@ export default function DocumentViewer({
   }, [isOpen]);
 
   const fileType = useMemo(() => {
-    const ext = title.toString().split(".").pop()?.toLowerCase() || 
-               fileUrl.toString().split(".").pop()?.toLowerCase();
-    return ext || "";
+    // First try to get extension from title as it's most reliable
+    const titleExt = title.split(".").pop()?.toLowerCase();
+    if (titleExt && titleExt !== title.toLowerCase()) {
+      return titleExt;
+    }
+    
+    // Try to get from URL if it has an extension
+    const urlExt = fileUrl.split("/").pop()?.split(".")?.pop()?.toLowerCase();
+    if (urlExt && urlExt.length <= 5 && urlExt !== "download") {
+      return urlExt;
+    }
+    
+    // If URL ends with /download/filename, extract extension from filename
+    const downloadMatch = fileUrl.match(/\/download\/([^/?#]+)/);
+    if (downloadMatch) {
+      const filename = downloadMatch[1];
+      const fileExt = filename.split(".").pop()?.toLowerCase();
+      if (fileExt && fileExt.length <= 5) {
+        return fileExt;
+      }
+    }
+    
+    // If title contains known file type indicators, use that
+    if (title.toLowerCase().includes("pdf")) return "pdf";
+    if (title.toLowerCase().includes("doc")) return "doc";
+    if (title.toLowerCase().includes("xls")) return "xls";
+    if (title.toLowerCase().includes("csv")) return "csv";
+    if (title.toLowerCase().includes("txt")) return "txt";
+    if (title.toLowerCase().includes("json")) return "json";
+    
+    // Try to determine from Content-Type header
+    fetch(fileUrl, { method: 'HEAD' })
+      .then(response => {
+        const contentType = response.headers.get('Content-Type');
+        if (contentType) {
+          if (contentType.includes('pdf')) return 'pdf';
+          if (contentType.includes('image')) return 'png'; // Just to trigger image viewer
+          if (contentType.includes('word')) return 'doc';
+          if (contentType.includes('excel') || contentType.includes('spreadsheet')) return 'xls';
+          if (contentType.includes('text/plain')) return 'txt';
+          if (contentType.includes('application/json')) return 'json';
+        }
+      })
+      .catch(() => {
+        // Silently fail - we'll use fallback
+      });
+    
+    // Default to a generic extension to trigger at least basic file viewer
+    return "";
   }, [fileUrl, title]);
 
   useEffect(() => {
@@ -177,7 +223,7 @@ export default function DocumentViewer({
         <div className="mt-12 flex w-full flex-grow justify-center">
           {loadError ? (
             renderErrorContent()
-          ) : fileType === "pdf" ? (
+          ) : fileType === "pdf" || fileUrl.toLowerCase().includes(".pdf") ? (
             <Document
               file={fileUrl}
               onLoadSuccess={({ numPages }) => setNumPages(numPages)}
@@ -219,11 +265,23 @@ export default function DocumentViewer({
               {fileContent}
             </pre>
           ) : (
-            <div className="max-h-full max-w-full text-2xl text-white">
-              Unsupported file type.{" "}
-              <a href={fileUrl} download className="text-blue-300 underline">
-                Download instead
-              </a>
+            // Try auto-detection mode with DocViewer as fallback
+            <div className="h-full w-full">
+              <DocViewer 
+                className="h-[80vh] w-[80vw]"
+                documents={[{ uri: fileUrl }]}
+                pluginRenderers={DocViewerRenderers}
+                config={{
+                  header: {
+                    disableHeader: true,
+                  },
+                }}
+              />
+              <div className="mt-4 flex justify-center">
+                <a href={fileUrl} download className="text-blue-300 underline">
+                  Download this file
+                </a>
+              </div>
             </div>
           )}
         </div>
