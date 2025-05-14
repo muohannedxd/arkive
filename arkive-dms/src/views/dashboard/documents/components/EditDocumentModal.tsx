@@ -26,6 +26,8 @@ interface EditDocumentModalProps {
   documentId: number;
   currentTitle: string;
   currentDepartment: string;
+  folderId?: number;  // Added folderId as an optional parameter
+  onSuccess?: () => void;  // Optional callback function to refresh folder documents
 }
 
 export default function EditDocumentModal({
@@ -34,6 +36,8 @@ export default function EditDocumentModal({
   documentId,
   currentTitle,
   currentDepartment,
+  folderId,  // Include the folderId in props
+  onSuccess,
 }: EditDocumentModalProps) {
   // Form state
   const [documentTitle, setDocumentTitle] = useState(currentTitle);
@@ -79,11 +83,19 @@ export default function EditDocumentModal({
     setIsSubmitting(true);
     
     try {
-      // Update the document using API
-      await axiosClient.put(`/documents/${documentId}`, {
+      // Prepare update data - include folderId if it exists to preserve folder association
+      const updateData: any = {
         title: documentTitle,
         department: selectedDepartment,
-      });
+      };
+      
+      // If folderId exists, include it in the update data to preserve folder association
+      if (folderId) {
+        updateData.folderId = folderId;
+      }
+      
+      // Update the document using API
+      await axiosClient.put(`/documents/${documentId}`, updateData);
       
       // Show success message
       toast({
@@ -96,6 +108,11 @@ export default function EditDocumentModal({
       
       // Refresh the document list
       fetchDocuments();
+      
+      // If we're in a folder view, also refresh the folder's document list
+      if (onSuccess) {
+        onSuccess();
+      }
       
       // Close the modal
       onClose();

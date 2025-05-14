@@ -23,11 +23,13 @@ interface FileInterface {
   owner: string;
   document: string;
   department: string;
+  folder_id?: number;  // Optional folder ID if the document belongs to a folder
   extra?: string;
+  onRefresh?: () => void; // Optional callback function to refresh document list
 }
 
 export default function FileCard(props: FileInterface) {
-  const { id, title, owner, document, department, extra } = props;
+  const { id, title, owner, document, department, folder_id, extra, onRefresh } = props;
   const [isOpen, setIsOpen] = useState(false); // Open document viewer
   const [isEditModalOpen, setIsEditModalOpen] = useState(false); // Edit modal
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // Delete modal
@@ -191,6 +193,8 @@ export default function FileCard(props: FileInterface) {
         documentId={id}
         currentTitle={title}
         currentDepartment={department}
+        folderId={folder_id}
+        onSuccess={onRefresh}
       />
 
       {/* Delete Document Modal */}
@@ -199,6 +203,7 @@ export default function FileCard(props: FileInterface) {
         onClose={() => setIsDeleteModalOpen(false)}
         documentId={id}
         documentTitle={title}
+        onSuccess={onRefresh}
       />
     </>
   );

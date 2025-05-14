@@ -1,7 +1,9 @@
-import { Button, Spinner } from "@chakra-ui/react";
+import { Button, Spinner, useDisclosure } from "@chakra-ui/react";
 import { FiArrowLeft } from "react-icons/fi";
+import { RiFileAddLine } from "react-icons/ri";
 import FileCard from "./fileCard";
-import { useState, useEffect } from "react";
+import AddFolderDocumentModal from "./AddFolderDocumentModal";
+import { useState, useEffect, useCallback } from "react";
 import axiosClient from "lib/axios";
 import { DocumentObject } from "types/document";
 
@@ -19,58 +21,74 @@ export default function FolderContent({
   const [documents, setDocuments] = useState<DocumentObject[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Add document modal controls
+  const { isOpen: isOpenAddDocumentModal, onOpen: onOpenAddDocumentModal, onClose: onCloseAddDocumentModal } = useDisclosure();
+
+  // Function to fetch folder documents - wrap in useCallback to avoid dependency issues
+  const fetchFolderDocuments = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // Call the API endpoint to get documents by folder ID
+      const response = await axiosClient.get(`/documents/folder/${folderId}`);
+      
+      if (response.data?.data) {
+        // Transform the API response to match DocumentObject structure
+        const formattedDocuments = response.data.data.map((doc: any) => ({
+          id: doc.id,
+          title: doc.title,
+          owner: doc.ownerName || "Unknown",
+          department: doc.department,
+          document: doc.url,
+          folder_id: doc.folderId
+        }));
+        
+        setDocuments(formattedDocuments);
+      } else {
+        setDocuments([]);
+      }
+    } catch (err: any) {
+      console.error("Failed to fetch folder documents:", err);
+      setError(err.response?.data?.message || "Failed to fetch folder documents");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [folderId]);  // Include folderId in dependencies
 
   useEffect(() => {
-    const fetchFolderDocuments = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        // Call the API endpoint to get documents by folder ID
-        const response = await axiosClient.get(`/documents/folder/${folderId}`);
-        
-        if (response.data?.data) {
-          // Transform the API response to match DocumentObject structure
-          const formattedDocuments = response.data.data.map((doc: any) => ({
-            id: doc.id,
-            title: doc.title,
-            owner: doc.ownerName || "Unknown",
-            department: doc.department,
-            document: doc.url,
-            folder_id: doc.folderId
-          }));
-          
-          setDocuments(formattedDocuments);
-        } else {
-          setDocuments([]);
-        }
-      } catch (err: any) {
-        console.error("Failed to fetch folder documents:", err);
-        setError(err.response?.data?.message || "Failed to fetch folder documents");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     if (folderId) {
       fetchFolderDocuments();
     }
-  }, [folderId]);
+  }, [folderId, fetchFolderDocuments]);  // Include fetchFolderDocuments in dependencies
 
   return (
     <div className="mt-4">
-      <div className="mb-6 flex items-center gap-4">
-        <Button 
-          leftIcon={<FiArrowLeft />} 
-          onClick={onBack}
-          variant="outline"
-          colorScheme="gray"
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button 
+            leftIcon={<FiArrowLeft />} 
+            onClick={onBack}
+            variant="outline"
+            colorScheme="gray"
+          >
+            Back
+          </Button>
+          <h3 className="text-xl font-bold text-navy-700">
+            Folder: {folderTitle}
+          </h3>
+        </div>
+        
+        {/* Add Document button */}
+        <Button
+          onClick={onOpenAddDocumentModal}
+          leftIcon={<RiFileAddLine />}
+          variant={"brand"}
+          className="bg-mainbrand mt-3 text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-800"
         >
-          Back
+          Add Document
         </Button>
-        <h3 className="text-xl font-bold text-navy-700">
-          Folder: {folderTitle}
-        </h3>
       </div>
       
       {isLoading ? (
@@ -91,7 +109,7 @@ export default function FolderContent({
           <Button
             onClick={() => {
               setIsLoading(true);
-              window.location.reload();
+              fetchFolderDocuments();
             }}
             variant={"brand"}
             className="bg-mainbrand text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-800"
@@ -105,8 +123,16 @@ export default function FolderContent({
             No Documents in this Folder
           </p>
           <p className="text-gray-600 text-center max-w-md">
-            This folder is empty. Add documents to this folder to see them here.
+            This folder is empty. Click 'Add Document' to upload documents to this folder.
           </p>
+          <Button
+            onClick={onOpenAddDocumentModal}
+            leftIcon={<RiFileAddLine />}
+            variant={"brand"}
+            className="bg-mainbrand text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-800 mt-4"
+          >
+            Add Your First Document
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5">
@@ -118,10 +144,21 @@ export default function FolderContent({
               owner={doc.owner}
               document={doc.document}
               department={doc.department}
+              folder_id={doc.folder_id || folderId}
+              onRefresh={fetchFolderDocuments}
             />
           ))}
         </div>
       )}
+
+      {/* Add Document to Folder Modal */}
+      <AddFolderDocumentModal
+        isOpen={isOpenAddDocumentModal}
+        onClose={onCloseAddDocumentModal}
+        folderId={folderId}
+        folderTitle={folderTitle}
+        onSuccess={fetchFolderDocuments}
+      />
     </div>
   );
 }

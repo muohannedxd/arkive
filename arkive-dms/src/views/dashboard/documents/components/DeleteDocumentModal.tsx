@@ -19,6 +19,7 @@ interface DeleteDocumentModalProps {
   onClose: () => void;
   documentId: number;
   documentTitle: string;
+  onSuccess?: () => void; // Optional callback function to refresh folder documents
 }
 
 export default function DeleteDocumentModal({
@@ -26,6 +27,7 @@ export default function DeleteDocumentModal({
   onClose,
   documentId,
   documentTitle,
+  onSuccess,
 }: DeleteDocumentModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { fetchDocuments } = useDocument();
@@ -46,8 +48,13 @@ export default function DeleteDocumentModal({
         isClosable: true,
       });
       
-      // Refresh documents list
+      // Refresh documents list (main view)
       fetchDocuments();
+      
+      // If we're in a folder view, also refresh the folder's document list
+      if (onSuccess) {
+        onSuccess();
+      }
       
       // Close modal
       onClose();
