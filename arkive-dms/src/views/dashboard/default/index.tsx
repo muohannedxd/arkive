@@ -8,8 +8,6 @@ import { MdBarChart, MdDashboard } from "react-icons/md";
 
 import Widget from "components/widget/Widget";
 import ComplexTable from "views/dashboard/default/components/ComplexTable";
-import DailyTraffic from "views/dashboard/default/components/DailyTraffic";
-import TaskCard from "views/dashboard/default/components/TaskCard";
 import tableDataComplex from "./variables/tableDataComplex";
 
 const Dashboard = () => {
@@ -61,28 +59,20 @@ const Dashboard = () => {
 
       {/* Tables & Charts */}
 
-      <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2"> 
-        {/* Traffic chart & Pie Chart */}
+      <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
+        {/* Calendar & Pie Chart */}
 
         {
           <div className="grid grid-cols-1 gap-5 rounded-[20px] md:grid-cols-2">
-            <DailyTraffic />
             <PieChartCard />
+            <MiniCalendar />
           </div>
         }
 
-        {/* Complex Table , Task & Calendar */}
+        {/* Complex Table */}
 
         <ComplexTable tableData={tableDataComplex} />
 
-        {/* Task chart & Calendar */}
-
-        <div className="grid grid-cols-1 gap-5 rounded-[20px] md:grid-cols-2">
-          <TaskCard />
-          <div className="grid grid-cols-1 rounded-[20px]">
-            <MiniCalendar />
-          </div>
-        </div>
       </div>
     </div>
   );
