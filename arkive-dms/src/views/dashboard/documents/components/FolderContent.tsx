@@ -1,5 +1,9 @@
-import { Button } from "@chakra-ui/react";
+import { Button, Spinner } from "@chakra-ui/react";
 import { FiArrowLeft } from "react-icons/fi";
+import FileCard from "./fileCard";
+import { useState, useEffect } from "react";
+import axiosClient from "lib/axios";
+import { DocumentObject } from "types/document";
 
 interface FolderContentProps {
   folderId: number;
@@ -12,6 +16,47 @@ export default function FolderContent({
   folderTitle,
   onBack,
 }: FolderContentProps) {
+  const [documents, setDocuments] = useState<DocumentObject[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchFolderDocuments = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Call the API endpoint to get documents by folder ID
+        const response = await axiosClient.get(`/documents/folder/${folderId}`);
+        
+        if (response.data?.data) {
+          // Transform the API response to match DocumentObject structure
+          const formattedDocuments = response.data.data.map((doc: any) => ({
+            id: doc.id,
+            title: doc.title,
+            owner: doc.ownerName || "Unknown",
+            department: doc.department,
+            document: doc.url,
+            folder_id: doc.folderId
+          }));
+          
+          setDocuments(formattedDocuments);
+        } else {
+          setDocuments([]);
+        }
+      } catch (err: any) {
+        console.error("Failed to fetch folder documents:", err);
+        setError(err.response?.data?.message || "Failed to fetch folder documents");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (folderId) {
+      fetchFolderDocuments();
+    }
+  }, [folderId]);
+
   return (
     <div className="mt-4">
       <div className="mb-6 flex items-center gap-4">
@@ -28,14 +73,53 @@ export default function FolderContent({
         </h3>
       </div>
       
-      <div className="mt-6 text-center">
-        <p className="text-lg text-gray-600">
-          This folder's documents will be listed here in the future implementation.
-        </p>
-        <p className="mt-2 text-sm text-gray-500">
-          Folder ID: {folderId}
-        </p>
-      </div>
+      {isLoading ? (
+        <div className="mt-10 flex min-h-[40vh] items-center justify-center">
+          <Spinner
+            size="xl"
+            color="brand"
+            className="text-mainbrand"
+            borderWidth={"4px"}
+          />
+        </div>
+      ) : error ? (
+        <div className="mt-10 flex min-h-[40vh] flex-col items-center justify-center space-y-3">
+          <p className="text-xl font-semibold text-red-600">
+            Error Loading Folder Documents
+          </p>
+          <p className="text-gray-700">{error}</p>
+          <Button
+            onClick={() => {
+              setIsLoading(true);
+              window.location.reload();
+            }}
+            variant={"brand"}
+            className="bg-mainbrand text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-800"
+          >
+            Retry
+          </Button>
+        </div>
+      ) : documents.length === 0 ? (
+        <div className="mt-4 flex min-h-[20vh] flex-col items-center justify-center space-y-3 bg-gray-50 rounded-lg py-10">
+          <p className="text-xl font-semibold text-gray-700">
+            No Documents in this Folder
+          </p>
+          <p className="text-gray-600 text-center max-w-md">
+            This folder is empty. Add documents to this folder to see them here.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5">
+          {documents.map((doc) => (
+            <FileCard
+              key={doc.id}
+              title={doc.title}
+              owner={doc.owner}
+              document={doc.document}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
