@@ -8,6 +8,7 @@ interface AuthStore {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
+  updateCurrentUser: (updatedUser: UserObject) => void;
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -60,5 +61,11 @@ export const useAuthStore = create<AuthStore>((set) => ({
       localStorage.removeItem("user");
       set({ user: null, token: null });
     }
+  },
+
+  // Update the current logged-in user in both the store and localStorage
+  updateCurrentUser: (updatedUser) => {
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+    set({ user: updatedUser });
   },
 }));

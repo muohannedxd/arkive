@@ -5,6 +5,7 @@ import axiosClient from "lib/axios";
 import { UserRowObj, UserObject } from "types/user";
 import { useUserStore } from "../stores/users.store";
 import useDepartments from "./departments.viewmodel";
+import { useAuthStore } from "views/auth/stores/auth.store";
 
 export default function useUsers() {
   /**
@@ -22,6 +23,9 @@ export default function useUsers() {
     setOneUserForm,
     clearOneUserForm
   } = useUserStore();
+
+  // Get auth store to update logged in user if needed
+  const { user: currentUser, token } = useAuthStore();
 
   // Initialize toast
   const toast = useToast();
@@ -234,6 +238,24 @@ export default function useUsers() {
         duration: 3000,
         isClosable: true,
       });
+
+      // Check if the updated user is the currently logged-in user
+      if (currentUser && userId === currentUser.id) {
+        // Get the updated user data from the response or use the form data
+        const updatedUser = response.data.data || {
+          ...currentUser,
+          ...userData,
+          departments: oneUserForm.departments // Keep the department objects
+        };
+        
+        // Update the user in localStorage
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        
+        // No need to update the token
+        if (token) {
+          localStorage.setItem("token", token);
+        }
+      }
       
       await fetchUsers();
       return true;
