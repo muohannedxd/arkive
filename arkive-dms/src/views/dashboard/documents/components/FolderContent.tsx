@@ -113,9 +113,11 @@ export default function FolderContent({
           {documents.map((doc) => (
             <FileCard
               key={doc.id}
+              id={doc.id}
               title={doc.title}
               owner={doc.owner}
               document={doc.document}
+              department={doc.department}
             />
           ))}
         </div>

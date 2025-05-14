@@ -5,25 +5,32 @@ import {
   IconButton,
   MenuList,
   MenuItem,
+  Tag,
 } from "@chakra-ui/react";
 import Card from "components/card";
 import PdfPreview from "components/pdfpreview";
 import DocumentViewer from "./DocumentViewer";
+import EditDocumentModal from "./EditDocumentModal";
+import DeleteDocumentModal from "./DeleteDocumentModal";
 import { BsThreeDotsVertical, BsEye } from "react-icons/bs";
 import { FiDownload, FiEdit3 } from "react-icons/fi";
 import { RiDeleteBin2Line } from "react-icons/ri";
 import { BiError } from "react-icons/bi";
 
 interface FileInterface {
+  id: number;
   title: string;
   owner: string;
   document: string;
+  department: string;
   extra?: string;
 }
 
 export default function FileCard(props: FileInterface) {
-  const { title, owner, document, extra } = props;
+  const { id, title, owner, document, department, extra } = props;
   const [isOpen, setIsOpen] = useState(false); // Open document viewer
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false); // Edit modal
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // Delete modal
   const [previewError, setPreviewError] = useState(false);
 
   // Extract file extension from title
@@ -63,6 +70,19 @@ export default function FileCard(props: FileInterface) {
       >
         <div className="w-full">
           <div className="relative w-full">
+            {/* Department Tag - positioned absolutely in the top right of the preview */}
+            <Tag
+              size="sm" 
+              colorScheme="blue" 
+              position="absolute" 
+              top="8px" 
+              right="8px" 
+              zIndex="1"
+              title={department}
+            >
+              {department}
+            </Tag>
+            
             {/* Handle PDFs and images with error fallback */}
             {isImage && !previewError ? (
               <img
@@ -130,10 +150,23 @@ export default function FileCard(props: FileInterface) {
                   >
                     Download File
                   </MenuItem>
-                  <MenuItem onClick={(e) => e.stopPropagation()} icon={<FiEdit3 />}>
+                  <MenuItem 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsEditModalOpen(true);
+                    }} 
+                    icon={<FiEdit3 />}
+                  >
                     Edit File
                   </MenuItem>
-                  <MenuItem color="red.600" onClick={(e) => e.stopPropagation()} icon={<RiDeleteBin2Line />}>
+                  <MenuItem 
+                    color="red.600" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsDeleteModalOpen(true);
+                    }} 
+                    icon={<RiDeleteBin2Line />}
+                  >
                     Delete File
                   </MenuItem>
                 </MenuList>
@@ -143,12 +176,29 @@ export default function FileCard(props: FileInterface) {
         </div>
       </Card>
 
-      {/* Google Drive-Style Fullscreen Viewer with proper document URL */}
+      {/* Document Viewer Modal */}
       <DocumentViewer 
         isOpen={isOpen} 
         onClose={() => setIsOpen(false)} 
         fileUrl={documentUrl} 
         title={title} 
+      />
+
+      {/* Edit Document Modal */}
+      <EditDocumentModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        documentId={id}
+        currentTitle={title}
+        currentDepartment={department}
+      />
+
+      {/* Delete Document Modal */}
+      <DeleteDocumentModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        documentId={id}
+        documentTitle={title}
       />
     </>
   );
