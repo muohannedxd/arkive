@@ -12,10 +12,12 @@ import PdfPreview from "components/pdfpreview";
 import DocumentViewer from "./DocumentViewer";
 import EditDocumentModal from "./EditDocumentModal";
 import DeleteDocumentModal from "./DeleteDocumentModal";
+import TranslateTitleModal from "./TranslateTitleModal";
 import { BsThreeDotsVertical, BsEye } from "react-icons/bs";
 import { FiDownload, FiEdit3 } from "react-icons/fi";
 import { RiDeleteBin2Line } from "react-icons/ri";
 import { BiError } from "react-icons/bi";
+import { MdTranslate } from "react-icons/md";
 
 interface FileInterface {
   id: number;
@@ -33,10 +35,12 @@ export default function FileCard(props: FileInterface) {
   const [isOpen, setIsOpen] = useState(false); // Open document viewer
   const [isEditModalOpen, setIsEditModalOpen] = useState(false); // Edit modal
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // Delete modal
+  const [isTranslateModalOpen, setIsTranslateModalOpen] = useState(false); // Translate modal
+  const [currentTitle, setCurrentTitle] = useState(title); // Track title for translations
   const [previewError, setPreviewError] = useState(false);
 
   // Extract file extension from title
-  const fileExtension = title.split(".").pop()?.toUpperCase() || "FILE";
+  const fileExtension = currentTitle.split(".").pop()?.toUpperCase() || "FILE";
   
   // Build the proper document URL for storage service
   const getDocumentUrl = (docPath: string): string => {
@@ -62,6 +66,14 @@ export default function FileCard(props: FileInterface) {
 
   const handleImageError = () => {
     setPreviewError(true);
+  };
+
+  // Handle successful translation
+  const handleTranslationSuccess = (newTitle: string) => {
+    setCurrentTitle(newTitle);
+    if (onRefresh) {
+      onRefresh();
+    }
   };
 
   return (
@@ -90,7 +102,7 @@ export default function FileCard(props: FileInterface) {
               <img
                 src={documentUrl}
                 className="mb-3 min-h-48 max-h-56 w-full rounded-md border-2 border-gray-100 sm:max-h-52 md:max-h-48 object-contain"
-                alt={title}
+                alt={currentTitle}
                 onError={handleImageError}
               />
             ) : isPdf && !previewError ? (
@@ -115,8 +127,8 @@ export default function FileCard(props: FileInterface) {
 
           <div className="flex items-center justify-between px-1">
             <div className="flex flex-col gap-1">
-              <h5 className="max-w-56 truncate text-base font-bold text-navy-700" title={title}>
-                {title}
+              <h5 className="max-w-56 truncate text-base font-bold text-navy-700" title={currentTitle}>
+                {currentTitle}
               </h5>
               <p className="max-w-56 truncate text-sm font-normal text-gray-600" title={owner}>
                 By {owner}
@@ -155,6 +167,21 @@ export default function FileCard(props: FileInterface) {
                   <MenuItem 
                     onClick={(e) => {
                       e.stopPropagation();
+                      setIsTranslateModalOpen(true);
+                    }} 
+                    icon={<MdTranslate />}
+                    sx={{
+                      '&:hover': {
+                        bg: 'blue.50',
+                        color: 'blue.600',
+                      }
+                    }}
+                  >
+                    Translate Title
+                  </MenuItem>
+                  <MenuItem 
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setIsEditModalOpen(true);
                     }} 
                     icon={<FiEdit3 />}
@@ -183,7 +210,7 @@ export default function FileCard(props: FileInterface) {
         isOpen={isOpen} 
         onClose={() => setIsOpen(false)} 
         fileUrl={documentUrl} 
-        title={title} 
+        title={currentTitle} 
       />
 
       {/* Edit Document Modal */}
@@ -191,7 +218,7 @@ export default function FileCard(props: FileInterface) {
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         documentId={id}
-        currentTitle={title}
+        currentTitle={currentTitle}
         currentDepartment={department}
         folderId={folder_id}
         onSuccess={onRefresh}
@@ -202,8 +229,18 @@ export default function FileCard(props: FileInterface) {
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         documentId={id}
-        documentTitle={title}
+        documentTitle={currentTitle}
         onSuccess={onRefresh}
+      />
+
+      {/* Translate Title Modal */}
+      <TranslateTitleModal
+        isOpen={isTranslateModalOpen}
+        onClose={() => setIsTranslateModalOpen(false)}
+        documentId={id}
+        documentTitle={currentTitle}
+        documentDepartment={department}
+        onTranslateSuccess={handleTranslationSuccess}
       />
     </>
   );

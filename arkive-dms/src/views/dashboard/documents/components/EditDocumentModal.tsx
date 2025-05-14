@@ -19,6 +19,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useAuthStore } from "views/auth/stores/auth.store";
 import axiosClient from "lib/axios";
 import useDocument from "../viewmodels/document.viewmodel";
+import { useDocumentStore } from "../stores/document.store";
 
 interface EditDocumentModalProps {
   isOpen: boolean;
@@ -28,6 +29,7 @@ interface EditDocumentModalProps {
   currentDepartment: string;
   folderId?: number;  // Added folderId as an optional parameter
   onSuccess?: () => void;  // Optional callback function to refresh folder documents
+  onEditSuccess?: (newTitle: string, newDepartment: string) => void; // Callback for immediate UI updates
 }
 
 export default function EditDocumentModal({
@@ -38,6 +40,7 @@ export default function EditDocumentModal({
   currentDepartment,
   folderId,  // Include the folderId in props
   onSuccess,
+  onEditSuccess,
 }: EditDocumentModalProps) {
   // Form state
   const [documentTitle, setDocumentTitle] = useState(currentTitle);
@@ -48,6 +51,9 @@ export default function EditDocumentModal({
   // Get user information (for department selection)
   const { user } = useAuthStore();
   const { fetchDocuments } = useDocument();
+  
+  // Get document store to update UI state directly
+  const { documentsData, setDocumentsData } = useDocumentStore();
   
   // Toast notifications
   const toast = useToast();
@@ -106,12 +112,33 @@ export default function EditDocumentModal({
         isClosable: true,
       });
       
+      // Update UI state directly for documents without folders
+      // This ensures changes are visible immediately without requiring a refresh
+      if (!folderId) {
+        const updatedDocuments = documentsData.map(doc => {
+          if (doc.id === documentId) {
+            return {
+              ...doc,
+              title: documentTitle,
+              department: selectedDepartment
+            };
+          }
+          return doc;
+        });
+        setDocumentsData(updatedDocuments);
+      }
+      
       // Refresh the document list
       fetchDocuments();
       
       // If we're in a folder view, also refresh the folder's document list
       if (onSuccess) {
         onSuccess();
+      }
+      
+      // Pass edit results back to the parent component
+      if (onEditSuccess) {
+        onEditSuccess(documentTitle, selectedDepartment);
       }
       
       // Close the modal
