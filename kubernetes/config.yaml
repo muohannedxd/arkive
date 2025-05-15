@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: arkive-config
+  namespace: arkive
+data:
+  POSTGRES_HOST: "postgres"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "arkive"
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+  AUTH_SERVICE_URL: "http://auth-service:8080"
+  USERS_SERVICE_URL: "http://users-service:5000"
+  DOCUMENTS_SERVICE_URL: "http://documents-service:8080"
+  STORAGE_SERVICE_URL: "http://storage-service:8000"
+  TRANSLATION_SERVICE_URL: "http://translation-service:8000"
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:29092"

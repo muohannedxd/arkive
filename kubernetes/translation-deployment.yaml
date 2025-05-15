@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: translation-service
+  namespace: arkive
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: translation-service
+  template:
+    metadata:
+      labels:
+        app: translation-service
+    spec:
+      containers:
+      - name: translation-service
+        image: muohannedxd/translation-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: arkive-config
+        resources:
+          limits:
+            cpu: "0.5"
+            memory: "512Mi"
+          requests:
+            cpu: "0.2"
+            memory: "256Mi"
+        readinessProbe:
+          httpGet:
+            path: /api/translation/health
+            port: 8000
+          initialDelaySeconds: 20
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: translation-service
+  namespace: arkive
+spec:
+  selector:
+    app: translation-service
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: ClusterIP

@@ -54,8 +54,11 @@ export default function FileCard(props: FileInterface) {
       ? docPath.split('/').pop() 
       : docPath;
       
+    // Make sure the filename is properly encoded for URLs
+    const encodedFilename = encodeURIComponent(filename || '');
+    
     // Use gateway port (8003) instead of direct storage service (8085)
-    return `http://localhost:8003/api/storage/download/${filename}`;
+    return `http://localhost:8003/api/storage/download/${encodedFilename}`;
   };
 
   const documentUrl = getDocumentUrl(document);

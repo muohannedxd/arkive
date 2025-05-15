@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-service
+  namespace: arkive
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: users-service
+  template:
+    metadata:
+      labels:
+        app: users-service
+    spec:
+      containers:
+      - name: users-service
+        image: muohannedxd/users-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5000
+        envFrom:
+        - configMapRef:
+            name: arkive-config
+        env:
+        - name: DATABASE_URI
+          value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: arkive-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: arkive-secrets
+              key: POSTGRES_PASSWORD
+        resources:
+          limits:
+            cpu: "0.5"
+            memory: "512Mi"
+          requests:
+            cpu: "0.2"
+            memory: "256Mi"
+        readinessProbe:
+          httpGet:
+            path: /api/users/health
+            port: 5000
+          initialDelaySeconds: 20
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: users-service
+  namespace: arkive
+spec:
+  selector:
+    app: users-service
+  ports:
+  - port: 5000
+    targetPort: 5000
+  type: ClusterIP
