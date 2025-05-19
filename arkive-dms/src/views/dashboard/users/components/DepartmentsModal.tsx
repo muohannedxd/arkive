@@ -57,6 +57,8 @@ export default function DepartmentsModal({
 
   const handleAddDepartment = async () => {
     await addDepartment();
+    // Explicitly fetch departments again to ensure all components have the latest data
+    await fetchDepartments();
   };
 
   const handleDeleteDepartment = async (id: number) => {

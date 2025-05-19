@@ -30,8 +30,21 @@ export default function useUsers() {
   // Initialize toast
   const toast = useToast();
 
-  // get departments from the departments viewmodel
-  const { departments } = useDepartments();
+  // get departments and fetchDepartments function from the departments viewmodel
+  const { departments, fetchDepartments } = useDepartments();
+  
+  // Ensure we have the latest departments data before any user operations
+  useEffect(() => {
+    // Fetch departments when the component mounts
+    fetchDepartments();
+    // Set up an interval to periodically refresh departments (every 30 seconds)
+    const intervalId = setInterval(() => {
+      fetchDepartments();
+    }, 30000);
+    
+    // Clean up the interval when the component unmounts
+    return () => clearInterval(intervalId);
+  }, [fetchDepartments]);
 
   const [sorting, setSorting] = useState<SortingState>([]);
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);

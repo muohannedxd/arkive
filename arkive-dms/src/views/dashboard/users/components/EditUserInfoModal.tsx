@@ -24,6 +24,7 @@ import { useState, useEffect, useRef } from "react";
 import { useUserStore } from "../stores/users.store";
 import { roles, statuses } from "lib/configData";
 import useUsers from "../viewmodels/users.viewmodel";
+import useDepartments from "../viewmodels/departments.viewmodel";
 
 export default function EditUserInfoModal({
   isOpen,
@@ -59,6 +60,9 @@ export default function EditUserInfoModal({
     formLoading,
     setFormError
   } = useUsers();
+  
+  // Get the departments fetch function directly from the departments viewmodel
+  const { fetchDepartments } = useDepartments();
 
   /**
    * Reset form state and fetch user data when modal opens
@@ -68,6 +72,9 @@ export default function EditUserInfoModal({
     if (isOpen && userId) {
       // Reset form messages
       setFormError("");
+      
+      // Fetch fresh departments data when modal opens
+      fetchDepartments();
       
       // Only fetch user data once when modal opens to prevent infinite loop
       if (!hasInitialFetchRef.current) {
@@ -79,7 +86,7 @@ export default function EditUserInfoModal({
       hasInitialFetchRef.current = false;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, userId, setFormError]);
+  }, [isOpen, userId, setFormError, fetchDepartments]);
 
   /**
    * Handle date change

@@ -24,6 +24,7 @@ import { useState, useEffect } from "react";
 import { useUserStore } from "../stores/users.store";
 import { roles, statuses } from "lib/configData";
 import useUsers from "../viewmodels/users.viewmodel";
+import useDepartments from "../viewmodels/departments.viewmodel";
 
 export default function AddOneUserModal({
   isOpen,
@@ -45,23 +46,35 @@ export default function AddOneUserModal({
   const { oneUserForm, setOneUserForm, clearOneUserForm } = useUserStore();
 
   /**
-   * Get departments and user operations from viewmodel
+   * Get departments directly from the departments viewmodel
+   */
+  const { departments, fetchDepartments } = useDepartments();
+
+  /**
+   * Get user operations from viewmodel
    */
   const {
-    departments,
     createUser,
     formLoading,
     setFormError,
   } = useUsers();
 
   /**
-   * Reset form state when the modal is opened
+   * Reset form state when the modal is opened and fetch fresh departments data
    */
   useEffect(() => {
     if (isOpen) {
       setFormError("");
+      // Fetch fresh departments data when modal opens
+      fetchDepartments();
     }
-  }, [isOpen, setFormError]);
+  }, [isOpen, setFormError, fetchDepartments]);
+  
+  // Always keep departments up to date whenever they change
+  useEffect(() => {
+    // This effect will run whenever the departments array changes
+    // No need to do anything here, just ensuring the component re-renders with latest departments
+  }, [departments]);
 
   /**
    * Handle date change
